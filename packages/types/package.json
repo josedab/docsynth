@@ -1,0 +1,26 @@
+{
+  "name": "@docsynth/types",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
+  }
+}
