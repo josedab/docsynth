@@ -1,0 +1,1446 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Organization & Users
+// ============================================================================
+
+model Organization {
+  id               String           @id @default(cuid())
+  name             String
+  githubOrgId      Int              @unique @map("github_org_id")
+  subscriptionTier SubscriptionTier @default(FREE) @map("subscription_tier")
+  settings         Json             @default("{}")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  users        User[]
+  repositories Repository[]
+  memberships  Membership[]
+  subscription Subscription?
+  usageRecords UsageRecord[]
+  auditLogs    AuditLog[]
+  apiKeys      ApiKey[]
+  integrations Integration[]
+  docTemplates DocTemplate[]
+
+  @@map("organizations")
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  TEAM
+  ENTERPRISE
+}
+
+model User {
+  id             String   @id @default(cuid())
+  githubUserId   Int      @unique @map("github_user_id")
+  githubUsername String   @map("github_username")
+  email          String?
+  avatarUrl      String?  @map("avatar_url")
+  role           UserRole @default(MEMBER)
+  organizationId String?  @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  memberships  Membership[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Membership {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  organizationId String   @map("organization_id")
+  role           UserRole @default(MEMBER)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("memberships")
+}
+
+// ============================================================================
+// Repositories
+// ============================================================================
+
+model Repository {
+  id              String    @id @default(cuid())
+  organizationId  String    @map("organization_id")
+  githubRepoId    Int       @unique @map("github_repo_id")
+  githubFullName  String    @map("github_full_name")
+  name            String
+  fullName        String    @map("full_name")
+  defaultBranch   String    @default("main") @map("default_branch")
+  enabled         Boolean   @default(true)
+  config          Json      @default("{}")
+  installationId  Int       @map("installation_id")
+  lastActivityAt  DateTime? @map("last_activity_at")
+  lastDriftScanAt DateTime? @map("last_drift_scan_at")
+  metadata        Json      @default("{}")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents       Document[]
+  prEvents        PREvent[]
+  styleProfile    StyleProfile?
+  usageRecords    UsageRecord[]
+  webhookLogs     WebhookLog[]
+  generationJobs  GenerationJob[]
+  documentChunks  DocumentChunk[]
+  vectorIndexMeta VectorIndexMeta?
+  generatedTests  GeneratedTest[]
+  architectureDecisions ArchitectureDecision[]
+  architectureDiagrams ArchitectureDiagram[]
+
+  @@index([organizationId])
+  @@index([installationId])
+  @@map("repositories")
+}
+
+// ============================================================================
+// Documents
+// ============================================================================
+
+model Document {
+  id              String       @id @default(cuid())
+  repositoryId    String       @map("repository_id")
+  path            String
+  type            DocumentType
+  title           String
+  content         String       @db.Text
+  version         Int          @default(1)
+  generatedFromPR Int?         @map("generated_from_pr")
+  metadata        Json         @default("{}")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  repository     Repository      @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  versions       DocVersion[]
+  chunks         DocumentChunk[]
+  codeExamples   CodeExample[]
+  generatedTests GeneratedTest[]
+  translations   Translation[]
+
+  @@unique([repositoryId, path])
+  @@index([repositoryId, type])
+  @@map("documents")
+}
+
+enum DocumentType {
+  README
+  API_REFERENCE
+  CHANGELOG
+  GUIDE
+  TUTORIAL
+  ARCHITECTURE
+  ADR
+  INLINE_COMMENT
+}
+
+model DocVersion {
+  id              String   @id @default(cuid())
+  documentId      String   @map("document_id")
+  content         String   @db.Text
+  version         Int
+  generatedAt     DateTime @default(now()) @map("generated_at")
+  prSha           String?  @map("pr_sha")
+  generationJobId String?  @map("generation_job_id")
+
+  document      Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  generationJob GenerationJob? @relation(fields: [generationJobId], references: [id])
+
+  @@index([documentId])
+  @@map("doc_versions")
+}
+
+model DocTemplate {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  name           String
+  description    String       @default("")
+  documentType   DocumentType @map("document_type")
+  sections       Json         @default("[]")
+  variables      Json         @default("[]")
+  style          Json         @default("{}")
+  isDefault      Boolean      @default(false) @map("is_default")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, documentType])
+  @@map("doc_templates")
+}
+
+// ============================================================================
+// PR Events & Webhooks
+// ============================================================================
+
+model PREvent {
+  id             String    @id @default(cuid())
+  repositoryId   String    @map("repository_id")
+  prNumber       Int       @map("pr_number")
+  action         PRAction
+  title          String
+  body           String?   @db.Text
+  baseBranch     String    @map("base_branch")
+  headBranch     String    @map("head_branch")
+  authorUsername String    @map("author_username")
+  mergedAt       DateTime? @map("merged_at")
+  payload        Json      @default("{}")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  repository     Repository      @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  changeAnalysis ChangeAnalysis?
+
+  @@index([repositoryId, prNumber])
+  @@map("pr_events")
+}
+
+enum PRAction {
+  OPENED
+  CLOSED
+  MERGED
+  SYNCHRONIZE
+  EDITED
+}
+
+model WebhookLog {
+  id           String    @id @default(cuid())
+  repositoryId String?   @map("repository_id")
+  eventType    String    @map("event_type")
+  deliveryId   String    @unique @map("delivery_id")
+  payload      Json      @default("{}")
+  processedAt  DateTime? @map("processed_at")
+  error        String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  repository Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("webhook_logs")
+}
+
+// ============================================================================
+// Change Analysis
+// ============================================================================
+
+model ChangeAnalysis {
+  id                    String         @id @default(cuid())
+  prEventId             String         @unique @map("pr_event_id")
+  changes               Json           @default("[]")
+  documentationImpact   Json           @map("documentation_impact")
+  priority              ChangePriority
+  requiresDocumentation Boolean        @default(false) @map("requires_documentation")
+  createdAt             DateTime       @default(now()) @map("created_at")
+
+  prEvent       PREvent        @relation(fields: [prEventId], references: [id], onDelete: Cascade)
+  intentContext IntentContext?
+  generationJob GenerationJob?
+
+  @@map("change_analyses")
+}
+
+enum ChangePriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  NONE
+}
+
+// ============================================================================
+// Intent Context
+// ============================================================================
+
+model IntentContext {
+  id                     String   @id @default(cuid())
+  changeAnalysisId       String   @unique @map("change_analysis_id")
+  businessPurpose        String   @map("business_purpose") @db.Text
+  technicalApproach      String   @map("technical_approach") @db.Text
+  alternativesConsidered Json     @default("[]") @map("alternatives_considered")
+  targetAudience         String   @map("target_audience")
+  keyConcepts            Json     @default("[]") @map("key_concepts")
+  sources                Json     @default("[]")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  changeAnalysis ChangeAnalysis  @relation(fields: [changeAnalysisId], references: [id], onDelete: Cascade)
+  generationJobs GenerationJob[]
+
+  @@map("intent_contexts")
+}
+
+// ============================================================================
+// Generation Jobs
+// ============================================================================
+
+model GenerationJob {
+  id               String    @id @default(cuid())
+  changeAnalysisId String    @unique @map("change_analysis_id")
+  intentContextId  String?   @map("intent_context_id")
+  repositoryId     String?   @map("repository_id")
+  status           JobStatus @default(PENDING)
+  progress         Int       @default(0)
+  startedAt        DateTime? @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  error            String?   @db.Text
+  result           Json?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  changeAnalysis ChangeAnalysis @relation(fields: [changeAnalysisId], references: [id], onDelete: Cascade)
+  intentContext  IntentContext? @relation(fields: [intentContextId], references: [id])
+  repository     Repository?    @relation(fields: [repositoryId], references: [id])
+  docVersions    DocVersion[]
+
+  @@index([status])
+  @@index([repositoryId])
+  @@map("generation_jobs")
+}
+
+enum JobStatus {
+  PENDING
+  ANALYZING
+  INFERRING
+  GENERATING
+  REVIEWING
+  COMPLETED
+  FAILED
+}
+
+// ============================================================================
+// Style Profiles
+// ============================================================================
+
+model StyleProfile {
+  id           String   @id @default(cuid())
+  repositoryId String   @unique @map("repository_id")
+  patterns     Json     @default("{}")
+  terminology  Json     @default("{}")
+  tone         Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@map("style_profiles")
+}
+
+// ============================================================================
+// Subscriptions & Billing
+// ============================================================================
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  organizationId       String             @unique @map("organization_id")
+  tier                 SubscriptionTier   @default(FREE)
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime           @default(now()) @map("current_period_start")
+  currentPeriodEnd     DateTime           @map("current_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+  UNPAID
+}
+
+model UsageRecord {
+  id               String   @id @default(cuid())
+  organizationId   String   @map("organization_id")
+  repositoryId     String   @map("repository_id")
+  period           String
+  generationsCount Int      @default(0) @map("generations_count")
+  tokensUsed       Int      @default(0) @map("tokens_used")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  repository   Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, repositoryId, period])
+  @@map("usage_records")
+}
+
+// ============================================================================
+// Audit Logs
+// ============================================================================
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  userId         String?  @map("user_id")
+  action         String
+  resourceType   String   @map("resource_type")
+  resourceId     String   @map("resource_id")
+  details        Json     @default("{}")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([resourceType, resourceId])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// API Keys
+// ============================================================================
+
+model ApiKey {
+  id             String    @id @default(cuid())
+  organizationId String    @map("organization_id")
+  name           String
+  key            String    @unique
+  prefix         String
+  lastUsedAt     DateTime? @map("last_used_at")
+  expiresAt      DateTime? @map("expires_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("api_keys")
+}
+
+// ============================================================================
+// Integrations
+// ============================================================================
+
+model Integration {
+  id             String            @id @default(cuid())
+  organizationId String            @map("organization_id")
+  type           String // JIRA, SLACK, CONFLUENCE, NOTION, LINEAR
+  status         IntegrationStatus @default(INACTIVE)
+  config         Json              @default("{}")
+  connectedAt    DateTime?         @map("connected_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, type])
+  @@index([organizationId])
+  @@map("integrations")
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
+// ============================================================================
+// Document Chunks & Embeddings (Feature 1: AI Documentation Chat)
+// ============================================================================
+
+model DocumentChunk {
+  id           String   @id @default(cuid())
+  documentId   String   @map("document_id")
+  repositoryId String   @map("repository_id")
+  chunkIndex   Int      @map("chunk_index")
+  content      String   @db.Text
+  embedding    Float[]  @db.DoublePrecision
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([repositoryId])
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+model ChatFeedback {
+  id              String   @id @default(cuid())
+  messageId       String   @map("message_id")
+  sessionId       String   @map("session_id")
+  userId          String   @map("user_id")
+  rating          String // 'helpful' | 'not-helpful'
+  feedbackText    String?  @map("feedback_text") @db.Text
+  suggestedAnswer String?  @map("suggested_answer") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([sessionId])
+  @@index([userId])
+  @@map("chat_feedback")
+}
+
+model VectorIndexMeta {
+  id             String   @id @default(cuid())
+  repositoryId   String   @unique @map("repository_id")
+  totalChunks    Int      @default(0) @map("total_chunks")
+  totalDocuments Int      @default(0) @map("total_documents")
+  embeddingModel String   @default("text-embedding-3-small") @map("embedding_model")
+  dimensionality Int      @default(1536)
+  lastIndexedAt  DateTime @default(now()) @map("last_indexed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@map("vector_index_meta")
+}
+
+// ============================================================================
+// Doc-to-Test Generation (Feature 2)
+// ============================================================================
+
+model CodeExample {
+  id             String   @id @default(cuid())
+  documentId     String   @map("document_id")
+  language       String
+  code           String   @db.Text
+  description    String?  @db.Text
+  expectedOutput String?  @map("expected_output") @db.Text
+  lineNumber     Int      @map("line_number")
+  context        String   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  document   Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  assertions ExtractedAssertion[]
+  tests      GeneratedTest[]
+
+  @@index([documentId])
+  @@map("code_examples")
+}
+
+model ExtractedAssertion {
+  id               String   @id @default(cuid())
+  codeExampleId    String   @map("code_example_id")
+  assertionType    String   @map("assertion_type") // 'return-value' | 'throws' | 'side-effect' | 'type-check'
+  inputDescription String   @map("input_description") @db.Text
+  expectedBehavior String   @map("expected_behavior") @db.Text
+  confidence       Float    @default(0.5)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  codeExample CodeExample @relation(fields: [codeExampleId], references: [id], onDelete: Cascade)
+
+  @@index([codeExampleId])
+  @@map("extracted_assertions")
+}
+
+model GeneratedTest {
+  id               String    @id @default(cuid())
+  documentId       String    @map("document_id")
+  repositoryId     String    @map("repository_id")
+  codeExampleId    String    @map("code_example_id")
+  testFramework    String    @map("test_framework") // jest, vitest, pytest, etc.
+  testCode         String    @map("test_code") @db.Text
+  testFilePath     String    @map("test_file_path")
+  status           String    @default("pending") // pending, generated, validated, failed
+  validationResult Json?     @map("validation_result")
+  lastRunAt        DateTime? @map("last_run_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  repository  Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  codeExample CodeExample @relation(fields: [codeExampleId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([documentId])
+  @@index([status])
+  @@map("generated_tests")
+}
+
+// ============================================================================
+// Doc Health Score History (Feature 1: Health Score Dashboard)
+// ============================================================================
+
+model HealthScoreSnapshot {
+  id                  String   @id @default(cuid())
+  repositoryId        String   @map("repository_id")
+  organizationId      String   @map("organization_id")
+  overallScore        Int      @map("overall_score")
+  freshnessScore      Int      @map("freshness_score")
+  completenessScore   Int      @map("completeness_score")
+  accuracyScore       Int      @map("accuracy_score")
+  documentCount       Int      @map("document_count")
+  healthyCount        Int      @map("healthy_count")
+  needsAttentionCount Int      @map("needs_attention_count")
+  criticalCount       Int      @map("critical_count")
+  coverageGaps        Json     @default("[]") @map("coverage_gaps")
+  snapshotDate        DateTime @default(now()) @map("snapshot_date")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId, snapshotDate])
+  @@index([organizationId, snapshotDate])
+  @@map("health_score_snapshots")
+}
+
+model HealthAlert {
+  id             String    @id @default(cuid())
+  organizationId String    @map("organization_id")
+  repositoryId   String?   @map("repository_id")
+  documentId     String?   @map("document_id")
+  alertType      String    @map("alert_type") // score-drop, critical-doc, drift-detected, coverage-gap
+  severity       String    @default("warning") // info, warning, critical
+  title          String
+  message        String    @db.Text
+  metadata       Json      @default("{}")
+  acknowledged   Boolean   @default(false)
+  acknowledgedBy String?   @map("acknowledged_by")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  notifiedVia    Json      @default("[]") @map("notified_via") // ['slack', 'email']
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([organizationId, acknowledged])
+  @@index([repositoryId])
+  @@index([alertType])
+  @@map("health_alerts")
+}
+
+model TeamLeaderboard {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  repositoryId   String   @map("repository_id")
+  repositoryName String   @map("repository_name")
+  period         String // 'weekly', 'monthly', 'all-time'
+  periodStart    DateTime @map("period_start")
+  periodEnd      DateTime @map("period_end")
+  rank           Int
+  score          Int
+  scoreChange    Int      @default(0) @map("score_change")
+  docsImproved   Int      @default(0) @map("docs_improved")
+  docsCreated    Int      @default(0) @map("docs_created")
+  streak         Int      @default(0)
+  badges         Json     @default("[]")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, repositoryId, period, periodStart])
+  @@index([organizationId, period])
+  @@map("team_leaderboards")
+}
+
+// ============================================================================
+// Interactive Examples (Feature 2)
+// ============================================================================
+
+model InteractiveExample {
+  id               String    @id @default(cuid())
+  documentId       String    @map("document_id")
+  repositoryId     String    @map("repository_id")
+  title            String
+  description      String?   @db.Text
+  language         String
+  code             String    @db.Text
+  expectedOutput   String?   @map("expected_output") @db.Text
+  setupCode        String?   @map("setup_code") @db.Text
+  dependencies     Json      @default("[]")
+  sandboxConfig    Json      @default("{}") @map("sandbox_config")
+  isRunnable       Boolean   @default(true) @map("is_runnable")
+  lastValidated    DateTime? @map("last_validated")
+  validationStatus String    @default("pending") @map("validation_status") // pending, valid, invalid, error
+  executionCount   Int       @default(0) @map("execution_count")
+  sourceLineStart  Int       @map("source_line_start")
+  sourceLineEnd    Int       @map("source_line_end")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@index([documentId])
+  @@index([repositoryId])
+  @@index([validationStatus])
+  @@map("interactive_examples")
+}
+
+model ExampleExecution {
+  id          String   @id @default(cuid())
+  exampleId   String   @map("example_id")
+  userId      String?  @map("user_id")
+  code        String   @db.Text
+  output      String?  @db.Text
+  error       String?  @db.Text
+  exitCode    Int?     @map("exit_code")
+  executionMs Int?     @map("execution_ms")
+  sandboxId   String?  @map("sandbox_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([exampleId])
+  @@index([userId])
+  @@map("example_executions")
+}
+
+// ============================================================================
+// Knowledge Graph (Feature 3)
+// ============================================================================
+
+model KnowledgeEntity {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  name         String
+  type         String // concept, function, class, module, document, file
+  description  String?  @db.Text
+  filePath     String?  @map("file_path")
+  lineStart    Int?     @map("line_start")
+  lineEnd      Int?     @map("line_end")
+  documentIds  Json     @default("[]") @map("document_ids")
+  metadata     Json     @default("{}")
+  embedding    Float[]  @db.DoublePrecision
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  outgoingEdges KnowledgeRelation[] @relation("FromEntity")
+  incomingEdges KnowledgeRelation[] @relation("ToEntity")
+
+  @@unique([repositoryId, name, type])
+  @@index([repositoryId, type])
+  @@map("knowledge_entities")
+}
+
+model KnowledgeRelation {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  fromEntityId String   @map("from_entity_id")
+  toEntityId   String   @map("to_entity_id")
+  relationship String // defines, uses, extends, implements, documents, related, calls, imports
+  weight       Float    @default(1.0)
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  fromEntity KnowledgeEntity @relation("FromEntity", fields: [fromEntityId], references: [id], onDelete: Cascade)
+  toEntity   KnowledgeEntity @relation("ToEntity", fields: [toEntityId], references: [id], onDelete: Cascade)
+
+  @@unique([fromEntityId, toEntityId, relationship])
+  @@index([repositoryId])
+  @@index([fromEntityId])
+  @@index([toEntityId])
+  @@map("knowledge_relations")
+}
+
+model KnowledgeGraphMeta {
+  id              String   @id @default(cuid())
+  repositoryId    String   @unique @map("repository_id")
+  entityCount     Int      @default(0) @map("entity_count")
+  relationCount   Int      @default(0) @map("relation_count")
+  lastBuiltAt     DateTime @default(now()) @map("last_built_at")
+  buildDurationMs Int?     @map("build_duration_ms")
+  status          String   @default("pending") // pending, building, ready, error
+  errorMessage    String?  @map("error_message") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("knowledge_graph_meta")
+}
+
+// ============================================================================
+// Doc Review Copilot (Feature 4)
+// ============================================================================
+
+model DocReview {
+  id              String   @id @default(cuid())
+  repositoryId    String   @map("repository_id")
+  documentId      String?  @map("document_id")
+  pullRequestId   String?  @map("pull_request_id")
+  reviewType      String   @map("review_type") // pr_review, scheduled, manual
+  status          String   @default("pending") // pending, in_progress, completed, failed
+  overallScore    Float?   @map("overall_score")
+  accuracyScore   Float?   @map("accuracy_score")
+  clarityScore    Float?   @map("clarity_score")
+  styleScore      Float?   @map("style_score")
+  issuesFound     Int      @default(0) @map("issues_found")
+  suggestions     Json     @default("[]")
+  codeReferences  Json     @default("[]") @map("code_references")
+  reviewedContent String?  @map("reviewed_content") @db.Text
+  aiModel         String?  @map("ai_model")
+  processingMs    Int?     @map("processing_ms")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  comments DocReviewComment[]
+
+  @@index([repositoryId])
+  @@index([documentId])
+  @@index([pullRequestId])
+  @@map("doc_reviews")
+}
+
+model DocReviewComment {
+  id           String   @id @default(cuid())
+  reviewId     String   @map("review_id")
+  category     String   // accuracy, clarity, style, grammar, completeness, outdated
+  severity     String   // error, warning, suggestion, info
+  lineStart    Int?     @map("line_start")
+  lineEnd      Int?     @map("line_end")
+  originalText String?  @map("original_text") @db.Text
+  suggestion   String   @db.Text
+  explanation  String?  @db.Text
+  codeRef      String?  @map("code_ref") // reference to code that contradicts doc
+  resolved     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  review DocReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("doc_review_comments")
+}
+
+model StyleGuide {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  name           String
+  description    String?  @db.Text
+  rules          Json     @default("[]") // Array of style rules
+  examples       Json     @default("[]") // Good/bad examples
+  isDefault      Boolean  @default(false) @map("is_default")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, name])
+  @@map("style_guides")
+}
+
+// ============================================================================
+// Multi-Language Docs (Feature 5)
+// ============================================================================
+
+model Translation {
+  id           String   @id @default(cuid())
+  documentId   String   @map("document_id")
+  sourceLocale String   @map("source_locale")
+  targetLocale String   @map("target_locale")
+  status       String   @default("pending") // pending, translating, review, published
+  content      String?  @db.Text
+  glossaryUsed String[] @default([]) @map("glossary_used")
+  translator   String?  // ai, human, hybrid
+  confidence   Float?   @default(0.0)
+  reviewedBy   String?  @map("reviewed_by")
+  reviewedAt   DateTime? @map("reviewed_at")
+  publishedAt  DateTime? @map("published_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, targetLocale])
+  @@index([documentId])
+  @@index([targetLocale])
+  @@map("translations")
+}
+
+model Glossary {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  locale         String
+  term           String
+  definition     String   @db.Text
+  translations   Json     @default("{}") // { "es": "término", "fr": "terme" }
+  context        String?  @db.Text
+  doNotTranslate Boolean  @default(false) @map("do_not_translate")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, locale, term])
+  @@index([organizationId, locale])
+  @@map("glossary")
+}
+
+// ============================================================================
+// Architecture Diagram Generator (Feature 6)
+// ============================================================================
+
+model ArchitectureDiagram {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  name         String
+  diagramType  String   @map("diagram_type") // component, sequence, flow, erd, class
+  format       String   @default("mermaid") // mermaid, plantuml, d2
+  source       String   @db.Text // diagram source code
+  svg          String?  @db.Text // rendered SVG
+  description  String?  @db.Text
+  autoGenerated Boolean @default(true) @map("auto_generated")
+  lastSyncedAt DateTime? @map("last_synced_at")
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId, diagramType])
+  @@map("architecture_diagrams")
+}
+
+// ============================================================================
+// Onboarding Journey Builder (Feature 7)
+// ============================================================================
+
+model OnboardingJourney {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  role         String   // developer, reviewer, architect, devops, etc.
+  title        String
+  description  String?  @db.Text
+  estimatedMin Int      @default(60) @map("estimated_min")
+  steps        Json     @default("[]")
+  prerequisites Json    @default("[]")
+  isPublished  Boolean  @default(false) @map("is_published")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  progress OnboardingProgress[]
+
+  @@unique([repositoryId, role])
+  @@map("onboarding_journeys")
+}
+
+model OnboardingProgress {
+  id          String    @id @default(cuid())
+  journeyId   String    @map("journey_id")
+  userId      String    @map("user_id")
+  currentStep Int       @default(0) @map("current_step")
+  completed   Boolean   @default(false)
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  feedback    String?   @db.Text
+  rating      Int?
+
+  journey OnboardingJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@unique([journeyId, userId])
+  @@map("onboarding_progress")
+}
+
+// ============================================================================
+// Doc Chatbot RAG (Feature 8)
+// ============================================================================
+
+model ChatSession {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  userId       String   @map("user_id")
+  title        String?
+  context      Json     @default("{}") // Conversation context
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  messages ChatMessage[]
+
+  @@index([repositoryId])
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  sessionId   String   @map("session_id")
+  role        String   // user, assistant, system
+  content     String   @db.Text
+  sources     Json     @default("[]") // References to docs/code
+  feedback    String?  // thumbs_up, thumbs_down
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_messages")
+}
+
+// ============================================================================
+// ADR Generator (Feature 9)
+// ============================================================================
+
+model ArchitectureDecision {
+  id           String    @id @default(cuid())
+  repositoryId String    @map("repository_id")
+  adrNumber    Int       @map("adr_number")
+  title        String
+  status       String    @default("proposed") // proposed, accepted, deprecated, superseded
+  context      String    @db.Text
+  decision     String    @db.Text
+  consequences String?   @db.Text
+  alternatives Json      @default("[]")
+  relatedPRs   Json      @default("[]") @map("related_prs")
+  supersededBy String?   @map("superseded_by")
+  deciders     Json      @default("[]")
+  decidedAt    DateTime? @map("decided_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, adrNumber])
+  @@index([repositoryId, status])
+  @@map("architecture_decisions")
+}
+
+// ============================================================================
+// Slack/Teams Doc Bot (Feature 10)
+// ============================================================================
+
+model BotConversation {
+  id          String   @id @default(cuid())
+  platform    String   // slack, teams
+  channelId   String   @map("channel_id")
+  threadId    String?  @map("thread_id")
+  userId      String   @map("user_id")
+  query       String   @db.Text
+  response    String?  @db.Text
+  sources     Json     @default("[]")
+  helpful     Boolean?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([platform, channelId])
+  @@index([userId])
+  @@map("bot_conversations")
+}
+
+model DocAlert {
+  id             String    @id @default(cuid())
+  organizationId String    @map("organization_id")
+  channelId      String    @map("channel_id")
+  platform       String    // slack, teams
+  alertType      String    @map("alert_type") // drift, health, review
+  repositoryId   String?   @map("repository_id")
+  documentId     String?   @map("document_id")
+  message        String    @db.Text
+  sentAt         DateTime? @map("sent_at")
+  acknowledged   Boolean   @default(false)
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([organizationId, platform])
+  @@map("doc_alerts")
+}
+
+// ============================================================================
+// QA Agent (Next-Gen Feature 1)
+// ============================================================================
+
+model QASession {
+  id              String    @id @default(cuid())
+  repositoryId    String    @map("repository_id")
+  generationJobId String?   @map("generation_job_id")
+  prNumber        Int?      @map("pr_number")
+  status          String    @default("pending") // pending, reviewing, awaiting_response, completed, approved
+  confidenceScore Float?    @map("confidence_score")
+  autoApproved    Boolean   @default(false) @map("auto_approved")
+  approvedBy      String?   @map("approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  documentIds     Json      @default("[]") @map("document_ids")
+  metadata        Json      @default("{}")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  questions QAQuestion[]
+  feedback  QAFeedback[]
+
+  @@index([repositoryId])
+  @@index([status])
+  @@index([prNumber])
+  @@map("qa_sessions")
+}
+
+model QAQuestion {
+  id           String    @id @default(cuid())
+  sessionId    String    @map("session_id")
+  questionType String    @map("question_type") // ambiguity, missing_example, unclear_term, verification, edge_case
+  category     String    // api, behavior, usage, architecture, terminology
+  question     String    @db.Text
+  context      String?   @db.Text
+  documentPath String?   @map("document_path")
+  lineStart    Int?      @map("line_start")
+  lineEnd      Int?      @map("line_end")
+  priority     String    @default("medium") // low, medium, high, critical
+  status       String    @default("pending") // pending, answered, skipped, applied
+  answer       String?   @db.Text
+  answeredBy   String?   @map("answered_by")
+  answeredAt   DateTime? @map("answered_at")
+  appliedAt    DateTime? @map("applied_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  session QASession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([status])
+  @@map("qa_questions")
+}
+
+model QAFeedback {
+  id           String   @id @default(cuid())
+  sessionId    String   @map("session_id")
+  userId       String   @map("user_id")
+  rating       Int      // 1-5
+  feedbackType String   @map("feedback_type") // quality, relevance, helpfulness
+  comment      String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  session QASession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("qa_feedback")
+}
+
+// ============================================================================
+// Documentation Coverage (Next-Gen Feature 3)
+// ============================================================================
+
+model CoverageReport {
+  id              String   @id @default(cuid())
+  repositoryId    String   @map("repository_id")
+  commitSha       String   @map("commit_sha")
+  branch          String
+  totalExports    Int      @map("total_exports")
+  documentedCount Int      @map("documented_count")
+  coveragePercent Float    @map("coverage_percent")
+  undocumented    Json     @default("[]")
+  partiallyDoc    Json     @default("[]") @map("partially_doc")
+  fullyDoc        Json     @default("[]") @map("fully_doc")
+  byFileType      Json     @default("{}") @map("by_file_type")
+  byModule        Json     @default("{}") @map("by_module")
+  threshold       Float    @default(70.0)
+  passed          Boolean  @default(false)
+  checkRunId      String?  @map("check_run_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId, commitSha])
+  @@index([repositoryId, createdAt])
+  @@map("coverage_reports")
+}
+
+model CoverageBadge {
+  id           String   @id @default(cuid())
+  repositoryId String   @unique @map("repository_id")
+  badgeUrl     String   @map("badge_url")
+  badgeSvg     String   @map("badge_svg") @db.Text
+  coverage     Float
+  label        String   @default("docs")
+  color        String   @default("brightgreen")
+  lastUpdated  DateTime @default(now()) @map("last_updated")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("coverage_badges")
+}
+
+// ============================================================================
+// Semantic Versioning (Next-Gen Feature 4)
+// ============================================================================
+
+model SemverAnalysis {
+  id               String   @id @default(cuid())
+  repositoryId     String   @map("repository_id")
+  prNumber         Int      @map("pr_number")
+  currentVersion   String   @map("current_version")
+  suggestedVersion String   @map("suggested_version")
+  bumpType         String   @map("bump_type") // major, minor, patch, none
+  breakingChanges  Json     @default("[]") @map("breaking_changes")
+  newFeatures      Json     @default("[]") @map("new_features")
+  bugFixes         Json     @default("[]") @map("bug_fixes")
+  confidence       Float    @default(0.0)
+  reasoning        String?  @db.Text
+  approved         Boolean  @default(false)
+  appliedAt        DateTime? @map("applied_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  migrationGuide MigrationGuide?
+
+  @@index([repositoryId, prNumber])
+  @@map("semver_analyses")
+}
+
+model MigrationGuide {
+  id             String   @id @default(cuid())
+  analysisId     String   @unique @map("analysis_id")
+  fromVersion    String   @map("from_version")
+  toVersion      String   @map("to_version")
+  content        String   @db.Text
+  breakingItems  Json     @default("[]") @map("breaking_items")
+  codeExamples   Json     @default("[]") @map("code_examples")
+  automatedSteps Json     @default("[]") @map("automated_steps")
+  manualSteps    Json     @default("[]") @map("manual_steps")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  analysis SemverAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@map("migration_guides")
+}
+
+// ============================================================================
+// Multi-Repo Hub (Next-Gen Feature 6)
+// ============================================================================
+
+model DocumentationHub {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  name           String
+  slug           String   @unique
+  description    String?  @db.Text
+  repositoryIds  Json     @default("[]") @map("repository_ids")
+  config         Json     @default("{}")
+  theme          Json     @default("{}")
+  customDomain   String?  @map("custom_domain")
+  isPublic       Boolean  @default(false) @map("is_public")
+  publishedAt    DateTime? @map("published_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("documentation_hubs")
+}
+
+model HubSearch {
+  id         String   @id @default(cuid())
+  hubId      String   @map("hub_id")
+  userId     String?  @map("user_id")
+  query      String
+  resultCount Int     @map("result_count")
+  clickedIds Json     @default("[]") @map("clicked_ids")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([hubId])
+  @@index([query])
+  @@map("hub_searches")
+}
+
+// ============================================================================
+// Video Documentation (Next-Gen Feature 7)
+// ============================================================================
+
+model VideoDoc {
+  id           String    @id @default(cuid())
+  repositoryId String    @map("repository_id")
+  documentId   String?   @map("document_id")
+  title        String
+  description  String?   @db.Text
+  script       String?   @db.Text
+  voiceConfig  Json      @default("{}") @map("voice_config")
+  videoUrl     String?   @map("video_url")
+  thumbnailUrl String?   @map("thumbnail_url")
+  duration     Int?      // seconds
+  status       String    @default("pending") // pending, generating, processing, ready, failed
+  format       String    @default("mp4")
+  resolution   String    @default("1080p")
+  viewCount    Int       @default(0) @map("view_count")
+  generatedAt  DateTime? @map("generated_at")
+  error        String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([repositoryId])
+  @@index([documentId])
+  @@map("video_docs")
+}
+
+// ============================================================================
+// Compliance Templates (Next-Gen Feature 8)
+// ============================================================================
+
+model ComplianceTemplate {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  framework      String   // SOC2, HIPAA, GDPR, PCI_DSS, ISO27001
+  version        String
+  description    String?  @db.Text
+  sections       Json     @default("[]")
+  requiredFields Json     @default("[]") @map("required_fields")
+  scanRules      Json     @default("[]") @map("scan_rules")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("compliance_templates")
+}
+
+model ComplianceReport {
+  id              String    @id @default(cuid())
+  organizationId  String    @map("organization_id")
+  repositoryId    String    @map("repository_id")
+  templateId      String    @map("template_id")
+  status          String    @default("pending") // pending, scanning, generating, review, completed
+  overallScore    Float?    @map("overall_score")
+  findings        Json      @default("[]")
+  recommendations Json      @default("[]")
+  generatedDoc    String?   @map("generated_doc") @db.Text
+  piiDetected     Json      @default("[]") @map("pii_detected")
+  accessControls  Json      @default("[]") @map("access_controls")
+  auditTrail      Json      @default("[]") @map("audit_trail")
+  reviewedBy      String?   @map("reviewed_by")
+  reviewedAt      DateTime? @map("reviewed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@map("compliance_reports")
+}
+
+// ============================================================================
+// Community Contribution (Next-Gen Feature 9)
+// ============================================================================
+
+model CommunitySettings {
+  id                  String   @id @default(cuid())
+  repositoryId        String   @unique @map("repository_id")
+  enabled             Boolean  @default(false)
+  requireApproval     Boolean  @default(true) @map("require_approval")
+  allowedContributors Json     @default("[]") @map("allowed_contributors")
+  bannedContributors  Json     @default("[]") @map("banned_contributors")
+  autoValidate        Boolean  @default(true) @map("auto_validate")
+  minReputation       Int      @default(0) @map("min_reputation")
+  guidelines          String?  @db.Text
+  codeOfConduct       String?  @map("code_of_conduct") @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("community_settings")
+}
+
+model CommunityContribution {
+  id              String    @id @default(cuid())
+  repositoryId    String    @map("repository_id")
+  contributorId   String    @map("contributor_id")
+  prNumber        Int?      @map("pr_number")
+  documentPath    String    @map("document_path")
+  contributionType String   @map("contribution_type") // new_doc, improvement, fix, translation
+  title           String
+  description     String?   @db.Text
+  content         String    @db.Text
+  diff            String?   @db.Text
+  status          String    @default("pending") // pending, validating, review, approved, rejected, merged
+  validationScore Float?    @map("validation_score")
+  validationNotes Json      @default("[]") @map("validation_notes")
+  reviewedBy      String?   @map("reviewed_by")
+  reviewedAt      DateTime? @map("reviewed_at")
+  mergedAt        DateTime? @map("merged_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([repositoryId])
+  @@index([contributorId])
+  @@index([status])
+  @@map("community_contributions")
+}
+
+model ContributorReputation {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  githubUsername  String   @map("github_username")
+  totalScore      Int      @default(0) @map("total_score")
+  contributions   Int      @default(0)
+  approvedCount   Int      @default(0) @map("approved_count")
+  rejectedCount   Int      @default(0) @map("rejected_count")
+  level           String   @default("newcomer") // newcomer, contributor, trusted, expert
+  badges          Json     @default("[]")
+  lastActiveAt    DateTime @default(now()) @map("last_active_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("contributor_reputations")
+}
+
+// ============================================================================
+// Documentation Analytics (Next-Gen Feature 10)
+// ============================================================================
+
+model DocPageView {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  documentId   String?  @map("document_id")
+  documentPath String   @map("document_path")
+  userId       String?  @map("user_id")
+  sessionId    String   @map("session_id")
+  referrer     String?
+  userAgent    String?  @map("user_agent")
+  country      String?
+  duration     Int?     // seconds on page
+  scrollDepth  Float?   @map("scroll_depth") // 0-100%
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId, documentPath])
+  @@index([repositoryId, createdAt])
+  @@index([documentId])
+  @@map("doc_page_views")
+}
+
+model DocSearchQuery {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  hubId        String?  @map("hub_id")
+  query        String
+  resultCount  Int      @map("result_count")
+  clickedDocId String?  @map("clicked_doc_id")
+  userId       String?  @map("user_id")
+  sessionId    String   @map("session_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId, query])
+  @@index([repositoryId, createdAt])
+  @@map("doc_search_queries")
+}
+
+model DocFeedback {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  documentId   String   @map("document_id")
+  documentPath String   @map("document_path")
+  userId       String?  @map("user_id")
+  sessionId    String   @map("session_id")
+  helpful      Boolean
+  reason       String?  // unclear, outdated, incomplete, wrong, other
+  comment      String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId, documentId])
+  @@index([repositoryId, createdAt])
+  @@map("doc_feedback")
+}
+
+model AnalyticsSummary {
+  id               String   @id @default(cuid())
+  repositoryId     String   @map("repository_id")
+  period           String   // daily, weekly, monthly
+  periodStart      DateTime @map("period_start")
+  periodEnd        DateTime @map("period_end")
+  totalViews       Int      @default(0) @map("total_views")
+  uniqueVisitors   Int      @default(0) @map("unique_visitors")
+  avgTimeOnPage    Float    @default(0) @map("avg_time_on_page")
+  avgScrollDepth   Float    @default(0) @map("avg_scroll_depth")
+  searchCount      Int      @default(0) @map("search_count")
+  helpfulCount     Int      @default(0) @map("helpful_count")
+  notHelpfulCount  Int      @default(0) @map("not_helpful_count")
+  topPages         Json     @default("[]") @map("top_pages")
+  topSearches      Json     @default("[]") @map("top_searches")
+  gapAnalysis      Json     @default("[]") @map("gap_analysis")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@unique([repositoryId, period, periodStart])
+  @@index([repositoryId, period])
+  @@map("analytics_summaries")
+}
