@@ -1,0 +1,42 @@
+{
+  "name": "@docsynth/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@docsynth/config": "*",
+    "@docsynth/database": "*",
+    "@docsynth/github": "*",
+    "@docsynth/queue": "*",
+    "@docsynth/types": "*",
+    "@docsynth/utils": "*",
+    "@hono/node-server": "^1.8.0",
+    "@hono/swagger-ui": "^0.5.3",
+    "@hono/zod-openapi": "^1.2.0",
+    "@types/ws": "^8.18.1",
+    "hono": "^4.0.0",
+    "jose": "^5.2.0",
+    "openai": "^4.26.0",
+    "stripe": "^20.3.0",
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
+  }
+}
