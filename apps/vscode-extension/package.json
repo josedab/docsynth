@@ -1,0 +1,177 @@
+{
+  "name": "docsynth-vscode",
+  "displayName": "DocSynth - AI Documentation",
+  "description": "AI-powered documentation that stays current with your code",
+  "version": "0.1.0",
+  "publisher": "docsynth",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/docsynth/docsynth"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "documentation",
+    "ai",
+    "docs",
+    "jsdoc",
+    "comments"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:python",
+    "onLanguage:go",
+    "onLanguage:rust"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "docsynth.generateDocs",
+        "title": "Generate Documentation",
+        "category": "DocSynth"
+      },
+      {
+        "command": "docsynth.previewDocs",
+        "title": "Preview Documentation",
+        "category": "DocSynth"
+      },
+      {
+        "command": "docsynth.checkHealth",
+        "title": "Check Documentation Health",
+        "category": "DocSynth"
+      },
+      {
+        "command": "docsynth.addInlineDoc",
+        "title": "Add Inline Documentation",
+        "category": "DocSynth"
+      },
+      {
+        "command": "docsynth.login",
+        "title": "Login to DocSynth",
+        "category": "DocSynth"
+      },
+      {
+        "command": "docsynth.selectRepository",
+        "title": "Select Repository",
+        "category": "DocSynth"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "docsynth.addInlineDoc",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "docsynth.previewDocs",
+        "key": "ctrl+shift+p",
+        "mac": "cmd+shift+p",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "docsynth.addInlineDoc",
+          "group": "docsynth",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "docsynth.previewDocs",
+          "group": "docsynth"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "DocSynth",
+      "properties": {
+        "docsynth.apiUrl": {
+          "type": "string",
+          "default": "https://api.docsynth.io",
+          "description": "DocSynth API URL"
+        },
+        "docsynth.autoPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically show documentation preview on save"
+        },
+        "docsynth.previewDebounceMs": {
+          "type": "number",
+          "default": 500,
+          "description": "Debounce delay for preview updates (ms)"
+        },
+        "docsynth.showInlineHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline documentation hints"
+        },
+        "docsynth.styleEnforcement": {
+          "type": "string",
+          "enum": ["off", "warn", "error"],
+          "default": "warn",
+          "description": "Style enforcement level"
+        },
+        "docsynth.excludePatterns": {
+          "type": "array",
+          "default": ["**/node_modules/**", "**/*.test.*", "**/*.spec.*"],
+          "description": "File patterns to exclude from documentation analysis"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "docsynth",
+          "title": "DocSynth",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "docsynth": [
+        {
+          "id": "docsynth.health",
+          "name": "Documentation Health"
+        },
+        {
+          "id": "docsynth.suggestions",
+          "name": "Suggestions"
+        },
+        {
+          "id": "docsynth.recent",
+          "name": "Recent Changes"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "npm run build -- --watch",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "esbuild": "^0.19.12",
+    "eslint": "^9.39.2",
+    "globals": "^17.2.0",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.54.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
