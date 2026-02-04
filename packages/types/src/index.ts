@@ -522,6 +522,41 @@ export type DriftType =
   | 'structural-mismatch'   // Doc structure doesn't match code structure
   | 'terminology-drift';    // Terms used inconsistently
 
+export type DriftRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export interface DriftPrediction {
+  id: string;
+  repositoryId: string;
+  documentId: string | null;
+  documentPath: string;
+  driftProbability: number;     // 0-100: Probability of drift occurring
+  riskLevel: DriftRiskLevel;
+  predictedDriftDate: Date | null;
+  
+  // Signals contributing to prediction
+  prActivityScore: number;
+  changeVelocityScore: number;
+  staleDaysScore: number;
+  relatedIssuesScore: number;
+  
+  // Related changes
+  relatedPRs: Array<{ number: number; title: string; mergedAt: Date }>;
+  affectedFiles: string[];
+  
+  // Recommendations
+  suggestedActions: string[];
+  estimatedEffort: 'quick' | 'moderate' | 'substantial';
+  
+  // Status
+  status: 'active' | 'acknowledged' | 'resolved' | 'false_positive';
+  acknowledgedBy: string | null;
+  acknowledgedAt: Date | null;
+  resolvedAt: Date | null;
+  
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ============================================================================
 // Diagram Generation Types
 // ============================================================================
