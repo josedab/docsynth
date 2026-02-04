@@ -1444,3 +1444,311 @@ model AnalyticsSummary {
   @@index([repositoryId, period])
   @@map("analytics_summaries")
 }
+
+// ============================================================================
+// Drift Prediction (Feature: Proactive Documentation Drift Detection)
+// ============================================================================
+
+model DriftPrediction {
+  id                 String   @id @default(cuid())
+  repositoryId       String   @map("repository_id")
+  documentId         String?  @map("document_id")
+  documentPath       String   @map("document_path")
+  driftProbability   Float    @map("drift_probability") // 0-100
+  riskLevel          String   @map("risk_level") // low, medium, high, critical
+  predictedDriftDate DateTime? @map("predicted_drift_date")
+  
+  // Signals contributing to prediction
+  prActivityScore       Float    @default(0) @map("pr_activity_score")
+  changeVelocityScore   Float    @default(0) @map("change_velocity_score")
+  staleDaysScore        Float    @default(0) @map("stale_days_score")
+  relatedIssuesScore    Float    @default(0) @map("related_issues_score")
+  
+  // Related changes that triggered prediction
+  relatedPRs            Json     @default("[]") @map("related_prs")
+  affectedFiles         Json     @default("[]") @map("affected_files")
+  
+  // Recommendations
+  suggestedActions      Json     @default("[]") @map("suggested_actions")
+  estimatedEffort       String?  @map("estimated_effort") // quick, moderate, substantial
+  
+  // Status tracking
+  status                String   @default("active") // active, acknowledged, resolved, false_positive
+  acknowledgedBy        String?  @map("acknowledged_by")
+  acknowledgedAt        DateTime? @map("acknowledged_at")
+  resolvedAt            DateTime? @map("resolved_at")
+  
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@index([repositoryId, status])
+  @@index([repositoryId, driftProbability])
+  @@index([documentId])
+  @@map("drift_predictions")
+}
+
+// ============================================================================
+// Onboarding Paths (Feature: Personalized Developer Onboarding)
+// ============================================================================
+
+model OnboardingPath {
+  id             String   @id @default(cuid())
+  repositoryId   String   @map("repository_id")
+  title          String
+  description    String?  @db.Text
+  targetRole     String   @map("target_role") // frontend, backend, fullstack, devops, newbie
+  difficulty     String   @default("beginner") // beginner, intermediate, advanced
+  estimatedHours Float    @map("estimated_hours")
+  prerequisites  Json     @default("[]")
+  isDefault      Boolean  @default(false) @map("is_default")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  steps          OnboardingStep[]
+  progress       OnboardingPathProgress[]
+
+  @@index([repositoryId, targetRole])
+  @@map("onboarding_paths")
+}
+
+model OnboardingStep {
+  id             String   @id @default(cuid())
+  pathId         String   @map("path_id")
+  orderIndex     Int      @map("order_index")
+  title          String
+  description    String?  @db.Text
+  stepType       String   @map("step_type") // read_doc, run_example, quiz, code_task
+  contentId      String?  @map("content_id") // documentId, exampleId, etc.
+  content        Json     @default("{}") // flexible content based on stepType
+  estimatedMins  Int      @map("estimated_mins")
+  isOptional     Boolean  @default(false) @map("is_optional")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  path OnboardingPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@index([pathId, orderIndex])
+  @@map("onboarding_steps")
+}
+
+model OnboardingPathProgress {
+  id             String    @id @default(cuid())
+  pathId         String    @map("path_id")
+  userId         String    @map("user_id")
+  currentStepIdx Int       @default(0) @map("current_step_idx")
+  completedSteps Json      @default("[]") @map("completed_steps")
+  progress       Float     @default(0) // 0-100
+  startedAt      DateTime  @default(now()) @map("started_at")
+  lastActivityAt DateTime  @default(now()) @map("last_activity_at")
+  completedAt    DateTime? @map("completed_at")
+
+  path OnboardingPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@unique([pathId, userId])
+  @@index([userId])
+  @@map("onboarding_path_progress")
+}
+
+// ============================================================================
+// Collaborative Reviews (Feature: Review Workflows)
+// ============================================================================
+
+model DocReviewRequest {
+  id             String    @id @default(cuid())
+  repositoryId   String    @map("repository_id")
+  documentId     String    @map("document_id")
+  requesterId    String    @map("requester_id")
+  title          String
+  description    String?   @db.Text
+  reviewType     String    @map("review_type") // content, technical, style, all
+  status         String    @default("pending") // pending, in_review, approved, rejected, changes_requested
+  priority       String    @default("normal") // low, normal, high, urgent
+  dueDate        DateTime? @map("due_date")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  assignments    ReviewAssignment[]
+  comments       ReviewComment[]
+
+  @@index([repositoryId, status])
+  @@index([documentId])
+  @@map("doc_review_requests")
+}
+
+model ReviewAssignment {
+  id             String    @id @default(cuid())
+  reviewRequestId String   @map("review_request_id")
+  reviewerId     String    @map("reviewer_id")
+  status         String    @default("pending") // pending, in_progress, completed
+  decision       String?   // approve, reject, request_changes
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  reviewRequest  DocReviewRequest @relation(fields: [reviewRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewRequestId, reviewerId])
+  @@map("review_assignments")
+}
+
+model ReviewComment {
+  id              String   @id @default(cuid())
+  reviewRequestId String   @map("review_request_id")
+  authorId        String   @map("author_id")
+  content         String   @db.Text
+  lineStart       Int?     @map("line_start")
+  lineEnd         Int?     @map("line_end")
+  resolved        Boolean  @default(false)
+  resolvedBy      String?  @map("resolved_by")
+  resolvedAt      DateTime? @map("resolved_at")
+  parentId        String?  @map("parent_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  reviewRequest   DocReviewRequest @relation(fields: [reviewRequestId], references: [id], onDelete: Cascade)
+
+  @@index([reviewRequestId])
+  @@map("review_comments")
+}
+
+// ============================================================================
+// Interactive Playgrounds (Feature: Runnable Code Sandboxes)
+// ============================================================================
+
+model Playground {
+  id             String   @id @default(cuid())
+  repositoryId   String   @map("repository_id")
+  documentId     String?  @map("document_id")
+  title          String
+  description    String?  @db.Text
+  language       String
+  framework      String?  // react, vue, node, python, etc.
+  initialCode    String   @map("initial_code") @db.Text
+  solutionCode   String?  @map("solution_code") @db.Text
+  testCode       String?  @map("test_code") @db.Text
+  dependencies   Json     @default("{}")
+  envVariables   Json     @default("{}") @map("env_variables")
+  isPublic       Boolean  @default(true) @map("is_public")
+  embedAllowed   Boolean  @default(true) @map("embed_allowed")
+  forkCount      Int      @default(0) @map("fork_count")
+  runCount       Int      @default(0) @map("run_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  sessions       PlaygroundSession[]
+
+  @@index([repositoryId])
+  @@index([documentId])
+  @@map("playgrounds")
+}
+
+model PlaygroundSession {
+  id             String   @id @default(cuid())
+  playgroundId   String   @map("playground_id")
+  userId         String?  @map("user_id")
+  sessionToken   String   @unique @map("session_token")
+  code           String   @db.Text
+  lastOutput     String?  @map("last_output") @db.Text
+  lastError      String?  @map("last_error") @db.Text
+  sandboxUrl     String?  @map("sandbox_url")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  playground     Playground @relation(fields: [playgroundId], references: [id], onDelete: Cascade)
+
+  @@index([playgroundId])
+  @@index([userId])
+  @@index([sessionToken])
+  @@map("playground_sessions")
+}
+
+// ============================================================================
+// Multi-Agent Documentation (Feature: Agent-based Doc Generation)
+// ============================================================================
+
+model AgentRun {
+  id             String    @id @default(cuid())
+  repositoryId   String    @map("repository_id")
+  targetFileId   String?   @map("target_file_id")
+  targetPath     String?   @map("target_path")
+  docType        String?   @map("doc_type")
+  runType        String    @default("doc_generation") @map("run_type") // doc_generation, review, update
+  status         String    @default("pending") // pending, running, completed, failed, cancelled
+  triggeredBy    String    @default("manual") @map("triggered_by") // pr_merge, manual, scheduled
+  prNumber       Int?      @map("pr_number")
+  config         Json      @default("{}")
+  
+  // Multi-agent orchestration
+  orchestratorLog Json     @default("[]") @map("orchestrator_log")
+  agentResults    Json     @default("{}") @map("agent_results")
+  
+  // Results
+  documentsGenerated Int    @default(0) @map("documents_generated")
+  documentsUpdated   Int    @default(0) @map("documents_updated")
+  outputPaths        Json   @default("[]") @map("output_paths")
+  finalOutput        String? @map("final_output") @db.Text
+  qualityScore       Float?  @map("quality_score")
+  error              String? @db.Text
+  
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  errorMessage    String?   @map("error_message") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  agentTasks      AgentTask[]
+
+  @@index([repositoryId, status])
+  @@map("agent_runs")
+}
+
+model AgentTask {
+  id             String    @id @default(cuid())
+  agentRunId     String    @map("agent_run_id")
+  runId          String?   @map("run_id")
+  agentType      String    @map("agent_type") // reader, searcher, writer, verifier, orchestrator
+  taskType       String    @default("process") @map("task_type") // analyze, search_context, generate, verify, coordinate
+  targetFile     String?   @map("target_file")
+  status         String    @default("pending") // pending, running, completed, failed
+  input          String?   @db.Text
+  output         String?   @db.Text
+  processingMs   Int?      @map("processing_ms")
+  tokensUsed     Int?      @map("tokens_used")
+  error          String?   @db.Text
+  errorMessage   String?   @map("error_message") @db.Text
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  run            AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([agentRunId, agentType])
+  @@index([status])
+  @@map("agent_tasks")
+}
+
+// ============================================================================
+// Citation Index (Feature: Smart Search with Citations)
+// ============================================================================
+
+model CitationIndex {
+  id             String   @id @default(cuid())
+  repositoryId   String   @map("repository_id")
+  documentId     String   @map("document_id")
+  chunkId        String?  @map("chunk_id")
+  content        String   @db.Text
+  contentHash    String   @map("content_hash")
+  sectionTitle   String?  @map("section_title")
+  lineStart      Int      @map("line_start")
+  lineEnd        Int      @map("line_end")
+  heading        String?
+  headingLevel   Int?     @map("heading_level")
+  codeBlocks     Json     @default("[]") @map("code_blocks")
+  keywords       Json     @default("[]")
+  embedding      Float[]  @db.DoublePrecision
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([documentId, contentHash])
+  @@index([repositoryId])
+  @@index([documentId])
+  @@map("citation_indices")
+}
