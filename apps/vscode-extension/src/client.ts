@@ -95,6 +95,54 @@ interface ChatResponse {
   answer: string;
   sources?: Array<{ path: string; title: string; relevance: number }>;
   suggestedFollowUp?: string[];
+  confidence?: number;
+}
+
+interface SearchResult {
+  chunks: Array<{
+    documentId: string;
+    documentPath: string;
+    documentTitle: string;
+    documentType: string;
+    content: string;
+    score: number;
+    sectionHeading?: string;
+  }>;
+  totalMatches: number;
+  searchTimeMs: number;
+  suggestedQueries?: string[];
+}
+
+interface ExplainResult {
+  explanation: string;
+  relatedDocs?: Array<{
+    title: string;
+    path: string;
+    excerpt: string;
+  }>;
+  codeExamples?: Array<{
+    language: string;
+    code: string;
+    description?: string;
+  }>;
+}
+
+interface CodeExample {
+  id: string;
+  title: string;
+  description?: string;
+  language: string;
+  code: string;
+}
+
+interface HealthIssue {
+  documentPath: string;
+  message: string;
+  severity: 'info' | 'warning' | 'error';
+}
+
+interface HealthResponseExtended extends HealthResponse {
+  issues?: HealthIssue[];
 }
 
 export class DocSynthClient {
@@ -216,6 +264,59 @@ export class DocSynthClient {
       body: JSON.stringify({ repositoryId, message, context }),
     });
     return response.data ?? { answer: 'No response available', sources: [], suggestedFollowUp: [] };
+  }
+
+  // Methods for Copilot Chat integration
+
+  async searchDocs(repositoryId: string, query: string): Promise<SearchResult> {
+    const response = await this.request<SearchResult>('/api/chat/search/enhanced', {
+      method: 'POST',
+      body: JSON.stringify({ repositoryId, query, topK: 10, boostRecent: true }),
+    });
+    return response.data ?? { chunks: [], totalMatches: 0, searchTimeMs: 0, suggestedQueries: [] };
+  }
+
+  async explainWithDocs(
+    repositoryId: string,
+    code: string,
+    filePath?: string
+  ): Promise<ExplainResult> {
+    const response = await this.request<ExplainResult>('/api/ide/explain', {
+      method: 'POST',
+      body: JSON.stringify({ repositoryId, code, filePath }),
+    });
+    return response.data ?? { explanation: 'Unable to explain code', relatedDocs: [], codeExamples: [] };
+  }
+
+  async askQuestion(repositoryId: string, question: string): Promise<ChatResponse> {
+    const response = await this.request<ChatResponse>('/api/chat/sessions/0/messages/enhanced', {
+      method: 'POST',
+      body: JSON.stringify({ message: question }),
+    });
+    if (response.data) {
+      return {
+        answer: (response.data as unknown as { message?: { content?: string } }).message?.content || '',
+        sources: (response.data as unknown as { sources?: Array<{ documentPath: string; documentId: string }> }).sources?.map((s) => ({
+          path: s.documentPath,
+          title: s.documentPath.split('/').pop() || s.documentId,
+          relevance: 1,
+        })),
+        confidence: (response.data as unknown as { confidence?: number }).confidence,
+      };
+    }
+    return { answer: 'Unable to answer question', sources: [], confidence: 0 };
+  }
+
+  async findExamples(repositoryId: string, query: string): Promise<CodeExample[]> {
+    const response = await this.request<{ examples: CodeExample[] }>(
+      `/api/playground/examples/${repositoryId}?q=${encodeURIComponent(query)}`
+    );
+    return response.data?.examples ?? [];
+  }
+
+  async getHealthExtended(repositoryId: string): Promise<HealthResponseExtended> {
+    const response = await this.request<HealthResponseExtended>(`/api/ide/health/${repositoryId}`);
+    return response.data!;
   }
 
   private async request<T>(

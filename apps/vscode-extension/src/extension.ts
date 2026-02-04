@@ -6,6 +6,7 @@ import { SuggestionsProvider } from './suggestions-provider';
 import { InlineDocProvider } from './inline-doc-provider';
 import { ChatPanelProvider } from './chat-panel-provider';
 import { ProactiveSuggestionsProvider, type UndocumentedItem } from './proactive-suggestions-provider';
+import { registerCopilotChatParticipant } from './copilot-chat-participant';
 
 let client: DocSynthClient;
 let previewProvider: DocPreviewProvider;
@@ -108,6 +109,22 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Register proactive suggestions provider for cleanup
   context.subscriptions.push(proactiveSuggestionsProvider);
+
+  // Register GitHub Copilot Chat participant
+  registerCopilotChatParticipant(client, context);
+
+  // Register command to insert documentation from Copilot Chat
+  context.subscriptions.push(
+    vscode.commands.registerCommand('docsynth.insertDocumentation', (documentation: string) => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor && documentation) {
+        const selection = editor.selection;
+        editor.edit((editBuilder) => {
+          editBuilder.insert(selection.start, documentation + '\n');
+        });
+      }
+    })
+  );
 }
 
 export function deactivate() {
