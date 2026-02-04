@@ -67,6 +67,10 @@ import multiAgentDocRoutes from './multi-agent-doc.js';
 import onboardingPathsRoutes from './onboarding-paths.js';
 import interactivePlaygroundRoutes from './interactive-playground.js';
 
+// Next-gen features (from planning)
+import { reviewDocumentationRoutes } from './review-documentation.js';
+import { coverageGateRoutes } from './coverage-gate.js';
+
 // Community features
 import { hubRoutes } from './hub.js';
 import { communityRoutes } from './community.js';
@@ -173,6 +177,8 @@ const nextGenRoutes: RouteConfig[] = [
   { path: '/api/multi-agent', router: multiAgentDocRoutes, description: 'Multi-agent documentation generation' },
   { path: '/api/onboarding-paths', router: onboardingPathsRoutes, description: 'Personalized onboarding paths' },
   { path: '/api/interactive-playground', router: interactivePlaygroundRoutes, description: 'Interactive code playgrounds' },
+  { path: '/api/review-documentation', router: reviewDocumentationRoutes, description: 'AI code review documentation' },
+  { path: '/api/coverage-gate', router: coverageGateRoutes, description: 'Documentation coverage CI/CD gate' },
 ];
 
 /**

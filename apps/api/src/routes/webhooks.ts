@@ -50,6 +50,15 @@ app.post('/github', async (c) => {
     case 'pull_request':
       await handlePullRequestEvent(payload, deliveryId);
       break;
+    case 'pull_request_review':
+      await handlePullRequestReviewEvent(payload);
+      break;
+    case 'pull_request_review_comment':
+      await handlePullRequestReviewCommentEvent(payload);
+      break;
+    case 'check_suite':
+      await handleCheckSuiteEvent(payload);
+      break;
     case 'installation':
       await handleInstallationEvent(payload);
       break;
@@ -232,6 +241,144 @@ async function handleInstallationRepositoriesEvent(payload: Record<string, unkno
     { added: reposAdded.length, removed: reposRemoved.length },
     'Installation repositories updated'
   );
+}
+
+async function handlePullRequestReviewEvent(payload: Record<string, unknown>): Promise<void> {
+  const action = payload.action as string;
+  const review = payload.review as Record<string, unknown>;
+  const pr = payload.pull_request as Record<string, unknown>;
+  const repo = payload.repository as Record<string, unknown>;
+  const installation = payload.installation as Record<string, unknown>;
+
+  // Only process submitted reviews
+  if (action !== 'submitted') {
+    return;
+  }
+
+  const githubRepoId = repo.id as number;
+  const installationId = installation.id as number;
+
+  // Check if repo is enabled
+  const repository = await prisma.repository.findUnique({
+    where: { githubRepoId },
+  });
+
+  if (!repository || !repository.enabled) {
+    log.debug({ githubRepoId }, 'Repository not enabled, skipping review event');
+    return;
+  }
+
+  // Queue review documentation job for significant reviews
+  const reviewState = review.state as string;
+  if (reviewState === 'changes_requested' || reviewState === 'approved') {
+    await addJob(QUEUE_NAMES.REVIEW_DOCUMENTATION, {
+      repositoryId: repository.id,
+      installationId,
+      owner: (repo.owner as Record<string, unknown>).login as string,
+      repo: repo.name as string,
+      prNumber: pr.number as number,
+      action: 'analyze_pr',
+    });
+
+    log.info({ prNumber: pr.number, reviewState }, 'PR review queued for documentation analysis');
+  }
+}
+
+async function handleCheckSuiteEvent(payload: Record<string, unknown>): Promise<void> {
+  const action = payload.action as string;
+  const checkSuite = payload.check_suite as Record<string, unknown>;
+  const repo = payload.repository as Record<string, unknown>;
+  const installation = payload.installation as Record<string, unknown>;
+
+  // Only process requested check suites
+  if (action !== 'requested' && action !== 'rerequested') {
+    return;
+  }
+
+  const githubRepoId = repo.id as number;
+  const installationId = installation.id as number;
+
+  // Check if repo is enabled
+  const repository = await prisma.repository.findUnique({
+    where: { githubRepoId },
+  });
+
+  if (!repository || !repository.enabled) {
+    log.debug({ githubRepoId }, 'Repository not enabled, skipping check suite event');
+    return;
+  }
+
+  // Check if coverage gate is enabled for this repo
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = prisma as any;
+  const config = await db.coverageGateConfig.findUnique({
+    where: { repositoryId: repository.id },
+  });
+
+  if (!config?.enabled) {
+    log.debug({ repositoryId: repository.id }, 'Coverage gate not enabled, skipping');
+    return;
+  }
+
+  // Queue coverage gate job
+  const headSha = checkSuite.head_sha as string;
+  const headBranch = checkSuite.head_branch as string;
+  const pullRequests = checkSuite.pull_requests as Array<{ number: number }> | undefined;
+  const prNumber = pullRequests?.[0]?.number;
+
+  await addJob(QUEUE_NAMES.COVERAGE_GATE, {
+    repositoryId: repository.id,
+    installationId,
+    owner: (repo.owner as Record<string, unknown>).login as string,
+    repo: repo.name as string,
+    commitSha: headSha,
+    branch: headBranch,
+    prNumber,
+  });
+
+  log.info({ repositoryId: repository.id, headSha, prNumber }, 'Coverage gate check queued');
+}
+
+async function handlePullRequestReviewCommentEvent(payload: Record<string, unknown>): Promise<void> {
+  const action = payload.action as string;
+  const comment = payload.comment as Record<string, unknown>;
+  const pr = payload.pull_request as Record<string, unknown>;
+  const repo = payload.repository as Record<string, unknown>;
+  const installation = payload.installation as Record<string, unknown>;
+
+  // Only process created comments that are part of a thread (have in_reply_to_id)
+  if (action !== 'created') {
+    return;
+  }
+
+  const githubRepoId = repo.id as number;
+  const installationId = installation.id as number;
+
+  // Check if repo is enabled
+  const repository = await prisma.repository.findUnique({
+    where: { githubRepoId },
+  });
+
+  if (!repository || !repository.enabled) {
+    log.debug({ githubRepoId }, 'Repository not enabled, skipping review comment event');
+    return;
+  }
+
+  // If this is a reply to a thread, queue for processing
+  const inReplyToId = comment.in_reply_to_id as number | null;
+  if (inReplyToId) {
+    await addJob(QUEUE_NAMES.REVIEW_DOCUMENTATION, {
+      repositoryId: repository.id,
+      installationId,
+      owner: (repo.owner as Record<string, unknown>).login as string,
+      repo: repo.name as string,
+      prNumber: pr.number as number,
+      action: 'process_thread',
+      threadId: inReplyToId.toString(),
+    });
+
+    log.info({ prNumber: pr.number, threadId: inReplyToId }, 'Review thread queued for documentation analysis');
+  }
 }
 
 export { app as webhookRoutes };

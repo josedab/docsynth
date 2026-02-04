@@ -23,6 +23,10 @@ import { startOnboardingWorker } from './workers/onboarding.js';
 import { startChatRAGWorker } from './workers/chat-rag.js';
 import { startADRGenerationWorker } from './workers/adr-generation.js';
 import { startBotMessageWorker } from './workers/bot-message.js';
+// Next-gen features (from planning)
+import { startReviewDocumentationWorker } from './workers/review-documentation.js';
+import { startCoverageGateWorker } from './workers/coverage-gate.js';
+import { startComplianceAssessmentWorker } from './workers/compliance-assessment.js';
 
 const log = createLogger('worker');
 
@@ -80,6 +84,10 @@ async function start() {
     workers.push(startChatRAGWorker());
     workers.push(startADRGenerationWorker());
     workers.push(startBotMessageWorker());
+    // Next-gen features (from planning)
+    workers.push(startReviewDocumentationWorker());
+    workers.push(startCoverageGateWorker());
+    workers.push(startComplianceAssessmentWorker());
 
     // Schedule periodic drift scans (runs daily)
     await schedulePeriodicDriftScans();

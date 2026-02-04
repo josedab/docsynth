@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { prisma } from '@docsynth/database';
+import { addJob, QUEUE_NAMES } from '@docsynth/queue';
 import { requireAuth, requireOrgAccess } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rate-limiter.js';
 import { NotFoundError, ValidationError, createLogger, generateId, getAnthropicClient } from '@docsynth/utils';
@@ -730,6 +731,236 @@ Format in markdown with clear step-by-step instructions and checkboxes.`,
       severity: body.severity || 'medium',
     },
   }, 201);
+});
+
+// ============================================================================
+// Deep Compliance Assessment (with Code Analysis)
+// ============================================================================
+
+// Start a deep compliance assessment with code scanning
+app.post('/deep-assess', requireAuth, requireOrgAccess, rateLimit('ai'), async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    repositoryId: string;
+    framework: string;
+    controlIds?: string[];
+  }>();
+
+  if (!body.repositoryId || !body.framework) {
+    throw new ValidationError('repositoryId and framework are required');
+  }
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: body.repositoryId, organizationId: orgId },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', body.repositoryId);
+  }
+
+  // Find or create compliance template
+  let template = await db.complianceTemplate.findFirst({
+    where: { framework: body.framework.toUpperCase() },
+  });
+
+  if (!template) {
+    template = await db.complianceTemplate.create({
+      data: {
+        name: `${body.framework.toUpperCase()} Compliance`,
+        framework: body.framework.toUpperCase(),
+        version: '2024',
+        description: `Auto-created template for ${body.framework}`,
+        sections: [],
+        requiredFields: [],
+        scanRules: [],
+      },
+    });
+  }
+
+  // Create compliance report
+  const report = await db.complianceReport.create({
+    data: {
+      organizationId: orgId,
+      repositoryId: body.repositoryId,
+      templateId: template.id,
+      status: 'pending',
+    },
+  });
+
+  // Parse owner/repo from fullName
+  const [owner, repo] = repository.fullName.split('/');
+
+  // Queue deep assessment job
+  const job = await addJob(QUEUE_NAMES.COMPLIANCE_ASSESSMENT, {
+    repositoryId: body.repositoryId,
+    reportId: report.id,
+    installationId: repository.installationId,
+    owner: owner || '',
+    repo: repo || '',
+    framework: body.framework.toUpperCase(),
+    controlIds: body.controlIds,
+  });
+
+  log.info(
+    { repositoryId: body.repositoryId, reportId: report.id, framework: body.framework, jobId: job.id },
+    'Deep compliance assessment queued'
+  );
+
+  return c.json({
+    success: true,
+    data: {
+      reportId: report.id,
+      jobId: job.id,
+      framework: body.framework,
+      status: 'pending',
+      message: 'Deep compliance assessment has been queued',
+    },
+  }, 202);
+});
+
+// Get compliance report with control assessments
+app.get('/reports/:reportId/detailed', requireAuth, async (c) => {
+  const reportId = c.req.param('reportId');
+
+  const report = await db.complianceReport.findUnique({
+    where: { id: reportId },
+    include: {
+      controlAssessments: {
+        include: {
+          control: true,
+        },
+      },
+    },
+  });
+
+  if (!report) {
+    throw new NotFoundError('Report', reportId);
+  }
+
+  return c.json({
+    success: true,
+    data: report,
+  });
+});
+
+// Get control assessment details
+app.get('/assessments/:assessmentId', requireAuth, async (c) => {
+  const assessmentId = c.req.param('assessmentId');
+
+  const assessment = await db.complianceControlAssessment.findUnique({
+    where: { id: assessmentId },
+    include: {
+      control: true,
+      report: {
+        select: {
+          id: true,
+          status: true,
+          overallScore: true,
+          repositoryId: true,
+        },
+      },
+    },
+  });
+
+  if (!assessment) {
+    throw new NotFoundError('Assessment', assessmentId);
+  }
+
+  return c.json({
+    success: true,
+    data: assessment,
+  });
+});
+
+// Update control assessment (manual review)
+app.patch('/assessments/:assessmentId', requireAuth, async (c) => {
+  const assessmentId = c.req.param('assessmentId');
+  const userId = c.get('userId');
+  const body = await c.req.json<{
+    status?: 'compliant' | 'partial' | 'non_compliant' | 'not_applicable';
+    notes?: string;
+  }>();
+
+  const assessment = await db.complianceControlAssessment.update({
+    where: { id: assessmentId },
+    data: {
+      status: body.status,
+      notes: body.notes,
+      reviewedBy: userId,
+      reviewedAt: new Date(),
+    },
+  });
+
+  return c.json({
+    success: true,
+    data: assessment,
+  });
+});
+
+// Download compliance report as markdown
+app.get('/reports/:reportId/download', requireAuth, async (c) => {
+  const reportId = c.req.param('reportId');
+
+  const report = await db.complianceReport.findUnique({
+    where: { id: reportId },
+    select: {
+      generatedDoc: true,
+      status: true,
+    },
+  });
+
+  if (!report) {
+    throw new NotFoundError('Report', reportId);
+  }
+
+  if (!report.generatedDoc) {
+    return c.json({
+      success: false,
+      error: 'Report documentation not yet generated',
+    }, 400);
+  }
+
+  return c.body(report.generatedDoc, 200, {
+    'Content-Type': 'text/markdown',
+    'Content-Disposition': `attachment; filename="compliance-report-${reportId}.md"`,
+  });
+});
+
+// List compliance reports for a repository
+app.get('/repositories/:repositoryId/reports', requireAuth, requireOrgAccess, async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+  const framework = c.req.query('framework');
+  const limit = parseInt(c.req.query('limit') || '20', 10);
+
+  const whereClause: { repositoryId: string; templateId?: string } = { repositoryId };
+
+  if (framework) {
+    const template = await db.complianceTemplate.findFirst({
+      where: { framework: framework.toUpperCase() },
+      select: { id: true },
+    });
+    if (template) {
+      whereClause.templateId = template.id;
+    }
+  }
+
+  const reports = await db.complianceReport.findMany({
+    where: whereClause,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: {
+      id: true,
+      status: true,
+      overallScore: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return c.json({
+    success: true,
+    data: reports,
+  });
 });
 
 export { app as complianceRoutes };

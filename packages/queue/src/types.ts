@@ -36,6 +36,10 @@ export const QUEUE_NAMES = {
   ONBOARDING_PATH: 'onboarding-path',
   PLAYGROUND_SESSION: 'playground-session',
   CITATION_INDEX: 'citation-index',
+  // Next-gen features (from planning)
+  REVIEW_DOCUMENTATION: 'review-documentation',
+  COVERAGE_GATE: 'coverage-gate',
+  COMPLIANCE_ASSESSMENT: 'compliance-assessment',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -308,6 +312,44 @@ export interface CitationIndexJobData {
 }
 
 // ============================================================================
+// Next-Gen Feature Job Data Types (from Planning)
+// ============================================================================
+
+// Review Documentation - Extract knowledge from PR review threads
+export interface ReviewDocumentationJobData {
+  repositoryId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  prNumber: number;
+  action: 'process_thread' | 'analyze_pr' | 'build_knowledge';
+  threadId?: string;
+}
+
+// Coverage Gate - CI/CD documentation coverage enforcement
+export interface CoverageGateJobData {
+  repositoryId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  prNumber?: number;
+  commitSha: string;
+  branch: string;
+  checkRunId?: number;
+}
+
+// Compliance Assessment - Deep compliance control assessment
+export interface ComplianceAssessmentJobData {
+  repositoryId: string;
+  reportId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  framework: string;
+  controlIds?: string[];
+}
+
+// ============================================================================
 // Job Data Map (maps queue names to their data types)
 // ============================================================================
 
@@ -344,4 +386,8 @@ export type JobDataMap = {
   [QUEUE_NAMES.ONBOARDING_PATH]: OnboardingPathJobData;
   [QUEUE_NAMES.PLAYGROUND_SESSION]: PlaygroundSessionJobData;
   [QUEUE_NAMES.CITATION_INDEX]: CitationIndexJobData;
+  // Next-gen features (from planning)
+  [QUEUE_NAMES.REVIEW_DOCUMENTATION]: ReviewDocumentationJobData;
+  [QUEUE_NAMES.COVERAGE_GATE]: CoverageGateJobData;
+  [QUEUE_NAMES.COMPLIANCE_ASSESSMENT]: ComplianceAssessmentJobData;
 };
