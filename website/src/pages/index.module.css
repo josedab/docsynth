@@ -1,0 +1,260 @@
+.heroBanner {
+  padding: 6rem 0 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--ifm-color-primary-lightest) 0%, transparent 100%);
+}
+
+[data-theme='dark'] .heroBanner {
+  background: linear-gradient(180deg, rgba(88, 101, 242, 0.15) 0%, transparent 100%);
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.heroSubtitle {
+  font-size: 1.5rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.badges img {
+  height: 20px;
+}
+
+.installCommand {
+  max-width: 400px;
+  margin: 0 auto 2rem;
+}
+
+.installCommand pre {
+  margin: 0;
+  border-radius: 8px;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 3rem 1rem;
+  }
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  .heroSubtitle {
+    font-size: 1.25rem;
+  }
+}
+
+.features {
+  padding: 4rem 0;
+}
+
+.featureCard {
+  background: var(--ifm-background-surface-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  height: 100%;
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.featureEmoji {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.featureCard h3 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.featureCard p {
+  margin: 0;
+  opacity: 0.85;
+}
+
+.howItWorks {
+  padding: 4rem 0;
+  background: var(--ifm-background-surface-color);
+}
+
+.pipeline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.pipelineStep {
+  text-align: center;
+  max-width: 140px;
+  padding: 1rem;
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ifm-color-primary);
+  color: white;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.pipelineStep strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.pipelineStep p {
+  font-size: 0.875rem;
+  margin: 0;
+  opacity: 0.8;
+}
+
+.pipelineArrow {
+  font-size: 1.5rem;
+  color: var(--ifm-color-primary);
+  padding-top: 1rem;
+}
+
+@media screen and (max-width: 768px) {
+  .pipeline {
+    flex-direction: column;
+    align-items: center;
+  }
+  .pipelineArrow {
+    transform: rotate(90deg);
+    padding: 0;
+  }
+}
+
+/* Social proof / Used by section */
+.usedBy {
+  padding: 3rem 0;
+  text-align: center;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.usedByTitle {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  margin-bottom: 1.5rem;
+}
+
+.usedByLogos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+  opacity: 0.6;
+}
+
+.usedByLogos span {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+/* Demo code section */
+.demoSection {
+  padding: 4rem 0;
+  background: var(--ifm-background-color);
+}
+
+.demoContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.demoText h2 {
+  margin-bottom: 1rem;
+}
+
+.demoText p {
+  font-size: 1.125rem;
+  opacity: 0.85;
+  margin-bottom: 1.5rem;
+}
+
+.demoCode {
+  background: var(--ifm-background-surface-color);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.demoCode pre {
+  margin: 0;
+  border-radius: 0;
+}
+
+@media screen and (max-width: 996px) {
+  .demoContainer {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* CTA section */
+.ctaSection {
+  padding: 4rem 0;
+  text-align: center;
+  background: linear-gradient(180deg, transparent 0%, var(--ifm-color-primary-lightest) 100%);
+}
+
+[data-theme='dark'] .ctaSection {
+  background: linear-gradient(180deg, transparent 0%, rgba(88, 101, 242, 0.1) 100%);
+}
+
+.ctaSection h2 {
+  margin-bottom: 1rem;
+}
+
+.ctaSection p {
+  font-size: 1.125rem;
+  opacity: 0.85;
+  margin-bottom: 2rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}

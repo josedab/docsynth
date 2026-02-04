@@ -1,0 +1,49 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#5865F2"/>
+      <stop offset="100%" style="stop-color:#7983f5"/>
+    </linearGradient>
+  </defs>
+  
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Accent line at top -->
+  <rect width="1200" height="4" fill="url(#accent)"/>
+  
+  <!-- Logo -->
+  <g transform="translate(100, 200)">
+    <rect width="80" height="80" rx="16" fill="#5865F2"/>
+    <path d="M24 24h12v4h-8v8h-4v-12z" fill="white"/>
+    <path d="M56 24h-12v4h8v8h4v-12z" fill="white"/>
+    <path d="M24 56h12v-4h-8v-8h-4v12z" fill="white"/>
+    <path d="M56 56h-12v-4h8v-8h4v12z" fill="white"/>
+    <circle cx="40" cy="40" r="8" fill="white"/>
+    <path d="M40 28v6" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <path d="M40 46v6" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <path d="M28 40h6" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <path d="M46 40h6" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Title -->
+  <text x="200" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="white">DocSynth</text>
+  
+  <!-- Tagline -->
+  <text x="100" y="350" font-family="system-ui, -apple-system, sans-serif" font-size="36" fill="#8b949e">AI-powered documentation that stays current with your code</text>
+  
+  <!-- Features -->
+  <g transform="translate(100, 420)" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#7983f5">
+    <text x="0" y="0">🤖 AI-Powered</text>
+    <text x="250" y="0">🔄 Always Current</text>
+    <text x="520" y="0">🔗 Multi-Source Context</text>
+    <text x="830" y="0">✍️ Human Quality</text>
+  </g>
+  
+  <!-- URL -->
+  <text x="100" y="550" font-family="monospace" font-size="28" fill="#5865F2">docsynth.dev</text>
+</svg>
