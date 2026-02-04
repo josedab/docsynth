@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - DocSynth</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: #f3f4f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon svg {
+      width: 40px;
+      height: 40px;
+      color: #6b7280;
+    }
+    h1 {
+      font-size: 24px;
+      color: #1f2937;
+      margin-bottom: 12px;
+    }
+    p {
+      color: #6b7280;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #2563eb;
+    }
+    .cached-docs {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .cached-docs h2 {
+      font-size: 16px;
+      color: #374151;
+      margin-bottom: 16px;
+    }
+    .cached-list {
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .cached-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f9fafb;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #4b5563;
+    }
+    .cached-item:before {
+      content: '📄';
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+      </svg>
+    </div>
+    <h1>You're Offline</h1>
+    <p>Don't worry! Your cached documents are still available. Check your internet connection and try again.</p>
+    <button class="btn" onclick="location.reload()">Try Again</button>
+
+    <div class="cached-docs">
+      <h2>Available Offline</h2>
+      <div class="cached-list" id="cached-list">
+        <p style="color: #9ca3af; font-size: 14px;">Loading cached documents...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadCachedDocs() {
+      const listEl = document.getElementById('cached-list');
+      try {
+        const cache = await caches.open('docsynth-docs-v1');
+        const requests = await cache.keys();
+
+        if (requests.length === 0) {
+          listEl.innerHTML = '<p style="color: #9ca3af; font-size: 14px;">No documents cached yet</p>';
+          return;
+        }
+
+        const docs = requests
+          .map(req => {
+            const url = new URL(req.url);
+            return url.pathname;
+          })
+          .filter(path => path.includes('/documents/'));
+
+        if (docs.length === 0) {
+          listEl.innerHTML = '<p style="color: #9ca3af; font-size: 14px;">No documents cached yet</p>';
+          return;
+        }
+
+        listEl.innerHTML = docs.map(path => {
+          const name = path.split('/').pop() || 'Document';
+          return `<a href="${path}" class="cached-item">${name}</a>`;
+        }).join('');
+      } catch (e) {
+        listEl.innerHTML = '<p style="color: #9ca3af; font-size: 14px;">Could not load cached documents</p>';
+      }
+    }
+
+    loadCachedDocs();
+
+    // Check for connectivity
+    window.addEventListener('online', () => {
+      location.reload();
+    });
+  </script>
+</body>
+</html>
