@@ -1,6 +1,12 @@
 import { Hono } from 'hono';
 import { prisma } from '@docsynth/database';
 import { createLogger } from '@docsynth/utils';
+import {
+  executeInSandbox,
+  validateCodeExample,
+  getSandboxService,
+  type SupportedLanguage,
+} from '../services/sandbox.service.js';
 
 const log = createLogger('playground-routes');
 
@@ -8,24 +14,18 @@ const log = createLogger('playground-routes');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = prisma as any;
 
-// Inline sandbox execution service for code examples
-// In production, would use isolated containers
+// Execute code using the sandbox service
 async function executeCode(
   code: string,
   language: string,
   timeout: number
 ): Promise<{ stdout: string; stderr: string; exitCode: number; executionTime: number }> {
-  const startTime = Date.now();
-  
-  // For security, in a real implementation this would run in an isolated Docker container
-  // Here we simulate execution for demonstration purposes
-  const simulatedOutput = `// Simulated execution of ${language} code\n// Code length: ${code.length} chars\n// Timeout: ${timeout}ms\n\n[Sandbox execution would run here in production]`;
-  
+  const result = await executeInSandbox(code, language as SupportedLanguage, { timeout });
   return {
-    stdout: simulatedOutput,
-    stderr: '',
-    exitCode: 0,
-    executionTime: Date.now() - startTime,
+    stdout: result.stdout,
+    stderr: result.stderr,
+    exitCode: result.exitCode,
+    executionTime: result.executionMs,
   };
 }
 
@@ -110,20 +110,23 @@ playgroundRoutes.post('/validate', async (c) => {
       }, 400);
     }
 
-    // Validate by running code and comparing output
-    const result = await executeCode(code, language, Math.min(timeout, 30000));
-    
-    // Compare output to expected (trimmed)
-    const isValid = expectedOutput 
-      ? result.stdout.trim() === expectedOutput.trim() 
-      : result.exitCode === 0;
+    // Use sandbox validation with comparison
+    const validation = await validateCodeExample(
+      code,
+      language as SupportedLanguage,
+      expectedOutput,
+      { timeout: Math.min(timeout, 30000) }
+    );
 
     return c.json({
       success: true,
       data: {
-        isValid,
-        actualOutput: result.stdout,
-        error: result.stderr || null,
+        isValid: validation.isValid,
+        actualOutput: validation.actualOutput,
+        expectedOutput: validation.expectedOutput,
+        error: validation.error || null,
+        executionMs: validation.executionResult.executionMs,
+        timedOut: validation.executionResult.timedOut,
       },
     });
   } catch (error) {
@@ -131,6 +134,125 @@ playgroundRoutes.post('/validate', async (c) => {
     return c.json({
       success: false,
       error: { code: 'VALIDATION_FAILED', message: 'Failed to validate example' },
+    }, 500);
+  }
+});
+
+// Get supported languages
+playgroundRoutes.get('/languages', (c) => {
+  const sandbox = getSandboxService();
+  return c.json({
+    success: true,
+    data: {
+      languages: sandbox.getSupportedLanguages(),
+    },
+  });
+});
+
+// Kill a running sandbox execution
+playgroundRoutes.post('/kill/:sandboxId', async (c) => {
+  const { sandboxId } = c.req.param();
+
+  try {
+    const sandbox = getSandboxService();
+    const killed = await sandbox.kill(sandboxId);
+
+    return c.json({
+      success: true,
+      data: { killed, sandboxId },
+    });
+  } catch (error) {
+    log.error({ error, sandboxId }, 'Failed to kill sandbox');
+    return c.json({
+      success: false,
+      error: { code: 'KILL_FAILED', message: 'Failed to kill sandbox' },
+    }, 500);
+  }
+});
+
+// Fork an example (create a copy for modification)
+playgroundRoutes.post('/examples/:exampleId/fork', async (c) => {
+  const { exampleId } = c.req.param();
+  const body = await c.req.json<{ userId?: string }>().catch(() => ({ userId: undefined }));
+
+  try {
+    const original = await db.interactiveExample.findUnique({
+      where: { id: exampleId },
+    });
+
+    if (!original) {
+      return c.json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Example not found' },
+      }, 404);
+    }
+
+    // Create a forked copy
+    const forked = await db.interactiveExample.create({
+      data: {
+        documentId: original.documentId,
+        repositoryId: original.repositoryId,
+        title: `${original.title} (Fork)`,
+        description: original.description,
+        language: original.language,
+        code: original.code,
+        expectedOutput: original.expectedOutput,
+        setupCode: original.setupCode,
+        dependencies: original.dependencies,
+        sandboxConfig: original.sandboxConfig,
+        isRunnable: original.isRunnable,
+        sourceLineStart: original.sourceLineStart,
+        sourceLineEnd: original.sourceLineEnd,
+        validationStatus: 'pending',
+      },
+    });
+
+    log.info({ originalId: exampleId, forkedId: forked.id, userId: body.userId }, 'Example forked');
+
+    return c.json({ success: true, data: forked }, 201);
+  } catch (error) {
+    log.error({ error, exampleId }, 'Failed to fork example');
+    return c.json({
+      success: false,
+      error: { code: 'FORK_FAILED', message: 'Failed to fork example' },
+    }, 500);
+  }
+});
+
+// Share an example (generate shareable link)
+playgroundRoutes.post('/examples/:exampleId/share', async (c) => {
+  const { exampleId } = c.req.param();
+
+  try {
+    const example = await db.interactiveExample.findUnique({
+      where: { id: exampleId },
+    });
+
+    if (!example) {
+      return c.json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Example not found' },
+      }, 404);
+    }
+
+    // Generate share URL
+    const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+    const shareUrl = `${baseUrl}/playground/shared/${exampleId}`;
+    const embedUrl = `${process.env.API_URL || 'http://localhost:3001'}/api/playground/embed/${exampleId}`;
+
+    return c.json({
+      success: true,
+      data: {
+        shareUrl,
+        embedUrl,
+        embedCode: `<iframe src="${embedUrl}" width="100%" height="400" frameborder="0"></iframe>`,
+      },
+    });
+  } catch (error) {
+    log.error({ error, exampleId }, 'Failed to generate share link');
+    return c.json({
+      success: false,
+      error: { code: 'SHARE_FAILED', message: 'Failed to generate share link' },
     }, 500);
   }
 });

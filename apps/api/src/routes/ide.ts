@@ -2,6 +2,12 @@ import { Hono } from 'hono';
 import { prisma } from '@docsynth/database';
 import { requireAuth, requireOrgAccess } from '../middleware/auth.js';
 import { NotFoundError, ValidationError, createLogger, getAnthropicClient } from '@docsynth/utils';
+import {
+  parseApiSurface,
+  detectBreakingChanges,
+  analyzeBreakingChangesWithAI,
+  analyzeDocumentationImpact,
+} from '../services/breaking-change.service.js';
 import type {
   IDEPreviewRequest,
   IDEPreviewResponse,
@@ -837,5 +843,308 @@ Return ONLY the documentation comment, no explanations.`,
     };
   }
 }
+
+// Explain code using documentation context (for Copilot Chat integration)
+app.post('/explain', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    repositoryId: string;
+    code: string;
+    filePath?: string;
+  }>();
+
+  if (!body.repositoryId || !body.code) {
+    throw new ValidationError('repositoryId and code are required');
+  }
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: body.repositoryId, organizationId: orgId },
+    include: {
+      documents: {
+        take: 10,
+        select: { id: true, path: true, title: true, content: true, type: true },
+      },
+    },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', body.repositoryId);
+  }
+
+  // Find related documentation
+  const relatedDocs = findRelatedDocumentation(body.code, repository.documents);
+
+  // Generate explanation using AI with doc context
+  const explanation = await generateCodeExplanation(
+    body.code,
+    relatedDocs,
+    body.filePath
+  );
+
+  return c.json({
+    success: true,
+    data: explanation,
+  });
+});
+
+// Helper: Find documentation related to code
+function findRelatedDocumentation(
+  code: string,
+  documents: { id: string; path: string; title: string; content: string; type: string }[]
+): Array<{ title: string; path: string; excerpt: string }> {
+  const codeLower = code.toLowerCase();
+
+  // Extract identifiers from code
+  const identifiers = codeLower.match(/\b[a-z_][a-z0-9_]*\b/gi) || [];
+  const uniqueIdentifiers = [...new Set(identifiers)].filter(id => id.length > 2);
+
+  return documents
+    .map((doc) => {
+      const contentLower = doc.content.toLowerCase();
+      let relevance = 0;
+
+      for (const id of uniqueIdentifiers) {
+        if (contentLower.includes(id)) {
+          relevance++;
+        }
+      }
+
+      // Boost for matching file paths
+      if (doc.path.toLowerCase().includes(code.split('/').pop()?.toLowerCase() || '')) {
+        relevance += 5;
+      }
+
+      return {
+        doc,
+        relevance,
+      };
+    })
+    .filter((d) => d.relevance > 0)
+    .sort((a, b) => b.relevance - a.relevance)
+    .slice(0, 5)
+    .map((d) => ({
+      title: d.doc.title,
+      path: d.doc.path,
+      excerpt: d.doc.content.slice(0, 300) + '...',
+    }));
+}
+
+// Helper: Generate code explanation with documentation context
+async function generateCodeExplanation(
+  code: string,
+  relatedDocs: Array<{ title: string; path: string; excerpt: string }>,
+  filePath?: string
+): Promise<{
+  explanation: string;
+  relatedDocs: Array<{ title: string; path: string; excerpt: string }>;
+  codeExamples: Array<{ language: string; code: string; description?: string }>;
+}> {
+  const anthropic = getAnthropicClient();
+
+  if (!anthropic) {
+    return {
+      explanation: 'Unable to generate explanation - AI service not configured.',
+      relatedDocs,
+      codeExamples: [],
+    };
+  }
+
+  const docContext = relatedDocs
+    .map((d) => `### ${d.title}\n${d.excerpt}`)
+    .join('\n\n');
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [
+        {
+          role: 'user',
+          content: `Explain this code based on the project documentation.
+
+Code:
+\`\`\`
+${code}
+\`\`\`
+
+${filePath ? `File: ${filePath}` : ''}
+
+Related Documentation:
+${docContext || 'No related documentation found.'}
+
+Provide:
+1. A clear explanation of what this code does
+2. How it fits into the larger project (based on docs)
+3. Any relevant usage examples
+
+Be concise but helpful.`,
+        },
+      ],
+    });
+
+    const explanation = response.content[0]?.type === 'text'
+      ? response.content[0].text
+      : 'Unable to generate explanation.';
+
+    return {
+      explanation,
+      relatedDocs,
+      codeExamples: [],
+    };
+  } catch (error) {
+    log.error({ error }, 'Code explanation generation failed');
+    return {
+      explanation: 'Unable to generate explanation due to an error.',
+      relatedDocs,
+      codeExamples: [],
+    };
+  }
+}
+
+// ============================================================================
+// API Breaking Change Detection (Feature 5)
+// ============================================================================
+
+// Analyze code changes for breaking API changes
+app.post('/breaking-changes', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    repositoryId: string;
+    filePath: string;
+    originalCode: string;
+    modifiedCode: string;
+    prContext?: { title?: string; body?: string };
+  }>();
+
+  if (!body.repositoryId || !body.filePath || !body.originalCode || !body.modifiedCode) {
+    throw new ValidationError('repositoryId, filePath, originalCode, and modifiedCode are required');
+  }
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: body.repositoryId, organizationId: orgId },
+    include: {
+      documents: {
+        select: { path: true, content: true, type: true },
+      },
+    },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', body.repositoryId);
+  }
+
+  // Analyze breaking changes with AI enhancement
+  const report = await analyzeBreakingChangesWithAI(
+    body.originalCode,
+    body.modifiedCode,
+    body.filePath,
+    body.prContext ? { prTitle: body.prContext.title, prBody: body.prContext.body } : undefined
+  );
+
+  // Find affected documentation
+  if (report.breakingChanges.length > 0) {
+    const docs = repository.documents.map(d => ({
+      path: d.path,
+      content: d.content,
+      type: d.type,
+    }));
+    report.affectedDocumentation = await analyzeDocumentationImpact(report.breakingChanges, docs);
+  }
+
+  return c.json({
+    success: true,
+    data: report,
+  });
+});
+
+// Quick static analysis for breaking changes (no AI, faster)
+app.post('/breaking-changes/quick', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    repositoryId: string;
+    filePath: string;
+    originalCode: string;
+    modifiedCode: string;
+  }>();
+
+  if (!body.repositoryId || !body.filePath) {
+    throw new ValidationError('repositoryId and filePath are required');
+  }
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: body.repositoryId, organizationId: orgId },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', body.repositoryId);
+  }
+
+  // Static analysis only (fast)
+  const oldSurface = parseApiSurface(body.originalCode || '', body.filePath);
+  const newSurface = parseApiSurface(body.modifiedCode || '', body.filePath);
+  const breakingChanges = detectBreakingChanges(oldSurface, newSurface);
+
+  return c.json({
+    success: true,
+    data: {
+      hasBreakingChanges: breakingChanges.length > 0,
+      breakingChanges,
+      suggestedVersionBump: breakingChanges.length > 0 ? 'major' : 'patch',
+      apiSurface: {
+        original: {
+          functions: oldSurface.functions.length,
+          interfaces: oldSurface.interfaces.length,
+          types: oldSurface.types.length,
+        },
+        modified: {
+          functions: newSurface.functions.length,
+          interfaces: newSurface.interfaces.length,
+          types: newSurface.types.length,
+        },
+      },
+    },
+  });
+});
+
+// Get API surface for a file
+app.post('/api-surface', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    repositoryId: string;
+    filePath: string;
+    code: string;
+  }>();
+
+  if (!body.repositoryId || !body.filePath || !body.code) {
+    throw new ValidationError('repositoryId, filePath, and code are required');
+  }
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: body.repositoryId, organizationId: orgId },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', body.repositoryId);
+  }
+
+  const surface = parseApiSurface(body.code, body.filePath);
+
+  return c.json({
+    success: true,
+    data: {
+      filePath: body.filePath,
+      functions: surface.functions,
+      interfaces: surface.interfaces,
+      types: surface.types,
+      exports: surface.exports,
+      summary: {
+        totalExports: surface.functions.length + surface.interfaces.length + surface.types.length,
+        functions: surface.functions.length,
+        interfaces: surface.interfaces.length,
+        types: surface.types.length,
+      },
+    },
+  });
+});
 
 export { app as ideRoutes };

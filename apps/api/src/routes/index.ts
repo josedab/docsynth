@@ -36,6 +36,7 @@ import { chatRoutes } from './chat.js';
 import { knowledgeGraphRoutes } from './knowledge-graph.js';
 import { docTestRoutes } from './doc-tests.js';
 import { interactiveExamplesRoutes } from './interactive-examples.js';
+import docValidationRoutes from './doc-testing.js';
 
 // Advanced documentation features
 import { docReviewCopilotRoutes } from './doc-review-copilot.js';
@@ -56,6 +57,15 @@ import { complianceRoutes } from './compliance.js';
 import { selfHealingRoutes } from './self-healing.js';
 import { qaAgentRoutes } from './qa-agent.js';
 import { semverRoutes } from './semver.js';
+
+// New killer features
+import { driftPredictionRoutes } from './drift-prediction.js';
+import citationRoutes from './citation.js';
+import executableDocsRoutes from './executable-docs.js';
+import reviewWorkflowRoutes from './review-workflow.js';
+import multiAgentDocRoutes from './multi-agent-doc.js';
+import onboardingPathsRoutes from './onboarding-paths.js';
+import interactivePlaygroundRoutes from './interactive-playground.js';
 
 // Community features
 import { hubRoutes } from './hub.js';
@@ -123,6 +133,7 @@ const documentationRoutes: RouteConfig[] = [
   { path: '/api/knowledge-graph', router: knowledgeGraphRoutes, description: 'Knowledge graph' },
   { path: '/api/doc-tests', router: docTestRoutes, description: 'Documentation tests' },
   { path: '/api/examples', router: interactiveExamplesRoutes, description: 'Interactive examples' },
+  { path: '/api/doc-validation', router: docValidationRoutes, description: 'Documentation validation' },
 ];
 
 /**
@@ -155,6 +166,13 @@ const nextGenRoutes: RouteConfig[] = [
   { path: '/api/self-healing', router: selfHealingRoutes, description: 'Self-healing docs' },
   { path: '/api/qa-agent', router: qaAgentRoutes, description: 'QA agent' },
   { path: '/api/semver', router: semverRoutes, description: 'Semantic versioning' },
+  { path: '/api/drift-prediction', router: driftPredictionRoutes, description: 'Drift prediction' },
+  { path: '/api/citations', router: citationRoutes, description: 'Smart search with citations' },
+  { path: '/api/executable-docs', router: executableDocsRoutes, description: 'Executable documentation testing' },
+  { path: '/api/review-workflow', router: reviewWorkflowRoutes, description: 'Collaborative review workflows' },
+  { path: '/api/multi-agent', router: multiAgentDocRoutes, description: 'Multi-agent documentation generation' },
+  { path: '/api/onboarding-paths', router: onboardingPathsRoutes, description: 'Personalized onboarding paths' },
+  { path: '/api/interactive-playground', router: interactivePlaygroundRoutes, description: 'Interactive code playgrounds' },
 ];
 
 /**

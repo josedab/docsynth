@@ -15,6 +15,14 @@ import {
 } from '../services/websocket.js';
 import { semanticSearch, getVectorIndexStats } from '../services/embedding.js';
 import {
+  generateRAGResponseEnhanced,
+  semanticSearchEnhanced,
+  getUserContext,
+  saveRAGFeedback,
+  getUnansweredQueries,
+  type RAGContext,
+} from '../services/rag.service.js';
+import {
   createChatSessionSchema,
   sendChatMessageSchema,
   type CreateChatSessionInput,
@@ -653,5 +661,202 @@ Please provide a helpful answer based on the documentation context above.`,
     throw error;
   }
 }
+
+// Enhanced search with personalization
+app.post('/search/enhanced', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const userId = c.get('userId');
+  const body = await c.req.json<{
+    repositoryId: string;
+    query: string;
+    topK?: number;
+    minScore?: number;
+    boostRecent?: boolean;
+  }>();
+
+  if (!body.repositoryId || !body.query) {
+    throw new ValidationError('repositoryId and query are required');
+  }
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: body.repositoryId, organizationId: orgId },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', body.repositoryId);
+  }
+
+  // Get user personalization context
+  const userContext = await getUserContext(userId, body.repositoryId);
+
+  const context: RAGContext = {
+    repositoryId: body.repositoryId,
+    userId,
+    ...userContext,
+  };
+
+  const searchResult = await semanticSearchEnhanced(body.query, context, {
+    topK: body.topK ?? 5,
+    minScore: body.minScore ?? 0.3,
+    boostRecent: body.boostRecent ?? true,
+  });
+
+  return c.json({
+    success: true,
+    data: {
+      results: searchResult.chunks,
+      totalMatches: searchResult.totalMatches,
+      searchTimeMs: searchResult.searchTimeMs,
+      suggestedQueries: searchResult.suggestedQueries,
+    },
+  });
+});
+
+// Get personalized follow-up suggestions
+app.get('/sessions/:sessionId/suggestions', requireAuth, async (c) => {
+  const sessionId = c.req.param('sessionId');
+  const session = await chatSessionStore.get(sessionId);
+
+  if (!session) {
+    throw new NotFoundError('Chat session', sessionId);
+  }
+
+  // Get the last assistant message with follow-ups
+  const lastAssistantMessage = [...session.messages]
+    .reverse()
+    .find((m) => m.role === 'assistant');
+
+  // Generate follow-up suggestions based on conversation
+  const suggestions: string[] = [];
+
+  if (session.messages.length > 0) {
+    const lastUserQuery = [...session.messages]
+      .reverse()
+      .find((m) => m.role === 'user')?.content;
+
+    if (lastUserQuery) {
+      if (!lastUserQuery.includes('example')) {
+        suggestions.push(`Show me an example of ${lastUserQuery.slice(0, 50)}`);
+      }
+      suggestions.push(`What are the best practices for ${lastUserQuery.slice(0, 30)}?`);
+      suggestions.push(`Are there any alternatives to this approach?`);
+    }
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      suggestions: suggestions.slice(0, 5),
+      lastSources: lastAssistantMessage?.sources || [],
+    },
+  });
+});
+
+// Get unanswered queries (for doc improvement)
+app.get('/analytics/:repositoryId/unanswered', requireAuth, requireOrgAccess, async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+  const orgId = c.get('organizationId');
+  const { limit } = c.req.query();
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: repositoryId, organizationId: orgId },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', repositoryId);
+  }
+
+  const unanswered = await getUnansweredQueries(repositoryId, limit ? parseInt(limit, 10) : 20);
+
+  return c.json({
+    success: true,
+    data: {
+      queries: unanswered,
+      total: unanswered.length,
+    },
+  });
+});
+
+// Enhanced message with follow-ups and confidence
+app.post('/sessions/:sessionId/messages/enhanced', requireAuth, requireOrgAccess, chatMessageRateLimit, async (c) => {
+  const sessionId = c.req.param('sessionId');
+  const orgId = c.get('organizationId');
+  const userId = c.get('userId');
+  const body = await c.req.json<{ message: string; userRole?: string }>();
+
+  if (!body.message) {
+    throw new ValidationError('message is required');
+  }
+
+  const session = await chatSessionStore.get(sessionId);
+  if (!session) {
+    throw new NotFoundError('Chat session', sessionId);
+  }
+
+  const repository = await prisma.repository.findFirst({
+    where: { id: session.repositoryId, organizationId: orgId },
+  });
+
+  if (!repository) {
+    throw new NotFoundError('Repository', session.repositoryId);
+  }
+
+  // Add user message
+  const userMessage: ChatMessage = {
+    id: generateId('msg'),
+    role: 'user',
+    content: body.message,
+    timestamp: new Date(),
+  };
+  session.messages.push(userMessage);
+
+  // Get personalization context
+  const userContext = await getUserContext(userId, session.repositoryId);
+
+  const context: RAGContext = {
+    repositoryId: session.repositoryId,
+    userId,
+    sessionId,
+    userRole: body.userRole,
+    ...userContext,
+  };
+
+  // Generate enhanced response
+  const ragResponse = await generateRAGResponseEnhanced(
+    body.message,
+    context,
+    {
+      messages: session.messages,
+      topics: [],
+      mentionedDocuments: [],
+    }
+  );
+
+  // Add assistant message
+  const assistantMessage: ChatMessage = {
+    id: generateId('msg'),
+    role: 'assistant',
+    content: ragResponse.content,
+    timestamp: new Date(),
+    sources: ragResponse.sources,
+  };
+  session.messages.push(assistantMessage);
+  session.lastMessageAt = new Date();
+
+  await chatSessionStore.set(sessionId, session);
+  log.info({ sessionId, messageId: assistantMessage.id, confidence: ragResponse.confidence }, 'Enhanced chat message processed');
+
+  return c.json({
+    success: true,
+    data: {
+      message: assistantMessage,
+      sources: ragResponse.sources,
+      confidence: ragResponse.confidence,
+      followUpQuestions: ragResponse.followUpQuestions,
+      relatedTopics: ragResponse.relatedTopics,
+      tokensUsed: ragResponse.tokensUsed,
+    },
+  });
+});
 
 export { app as chatRoutes };

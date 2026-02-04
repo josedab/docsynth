@@ -614,4 +614,315 @@ app.get('/dashboard', requireAuth, requireOrgAccess, async (c) => {
   });
 });
 
+// ============================================================================
+// Team Contribution Analytics (Feature 6 Enhancement)
+// ============================================================================
+
+// Get team contribution metrics
+app.get('/contributions', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const { days } = c.req.query();
+
+  const periodDays = days ? parseInt(days, 10) : 30;
+  const start = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+  const orgRepos = await prisma.repository.findMany({
+    where: { organizationId: orgId },
+    select: { id: true },
+  });
+  const repoIds = orgRepos.map((r) => r.id);
+
+  // Get generation jobs grouped by status
+  const jobs = await prisma.generationJob.findMany({
+    where: {
+      repositoryId: { in: repoIds },
+      createdAt: { gte: start },
+    },
+    select: {
+      id: true,
+      status: true,
+      createdAt: true,
+      repositoryId: true,
+    },
+  });
+
+  // Get PR events to identify contributors
+  const prEvents = await prisma.pREvent.findMany({
+    where: {
+      repositoryId: { in: repoIds },
+      createdAt: { gte: start },
+    },
+    select: {
+      id: true,
+      prNumber: true,
+      title: true,
+      createdAt: true,
+      repositoryId: true,
+    },
+  });
+
+  // Aggregate by status
+  const byStatus = jobs.reduce((acc, job) => {
+    const status = job.status || 'unknown';
+    if (!acc[status]) acc[status] = 0;
+    acc[status]++;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Weekly contribution trend
+  const weeklyContributions: Record<string, { generations: number; prs: number }> = {};
+
+  for (let i = 0; i < periodDays; i += 7) {
+    const weekStart = new Date(Date.now() - (periodDays - i) * 24 * 60 * 60 * 1000);
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const weekKey = weekStart.toISOString().split('T')[0] ?? '';
+
+    const weekJobs = jobs.filter(j => j.createdAt >= weekStart && j.createdAt < weekEnd);
+    const weekPRs = prEvents.filter(p => p.createdAt >= weekStart && p.createdAt < weekEnd);
+
+    weeklyContributions[weekKey] = {
+      generations: weekJobs.length,
+      prs: weekPRs.length,
+    };
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      period: { days: periodDays, start: start.toISOString() },
+      summary: {
+        totalGenerations: jobs.length,
+        totalPREvents: prEvents.length,
+        successfulGenerations: jobs.filter(j => j.status === 'COMPLETED').length,
+      },
+      byStatus,
+      weeklyTrend: Object.entries(weeklyContributions).map(([week, data]) => ({
+        week,
+        ...data,
+      })),
+    },
+  });
+});
+
+// Get trending topics in documentation
+app.get('/trending', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const { days, limit } = c.req.query();
+
+  const periodDays = days ? parseInt(days, 10) : 7;
+  const topLimit = limit ? parseInt(limit, 10) : 10;
+  const start = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+  const orgRepos = await prisma.repository.findMany({
+    where: { organizationId: orgId },
+    select: { id: true },
+  });
+  const repoIds = orgRepos.map((r) => r.id);
+
+  // Get recent documents updated in the period
+  const recentDocs = await prisma.document.findMany({
+    where: {
+      repositoryId: { in: repoIds },
+      updatedAt: { gte: start },
+    },
+    select: {
+      id: true,
+      path: true,
+      title: true,
+      type: true,
+      content: true,
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: 50,
+  });
+
+  // Extract topics from titles and content (simple keyword extraction)
+  const topicCounts: Record<string, { count: number; docs: string[] }> = {};
+
+  for (const doc of recentDocs) {
+    // Extract potential topics from title
+    const titleWords = (doc.title || '')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 3);
+
+    // Extract section headings from content
+    const headings = doc.content.match(/^#{1,3}\s+(.+)$/gm) || [];
+    const headingWords = headings
+      .map(h => h.replace(/^#+\s+/, '').toLowerCase())
+      .flatMap(h => h.split(/\s+/).filter(w => w.length > 3));
+
+    const allTopics = [...titleWords, ...headingWords];
+
+    for (const topic of allTopics) {
+      // Skip common words
+      const stopWords = ['this', 'that', 'with', 'from', 'have', 'been', 'will', 'your', 'what', 'when', 'where', 'which'];
+      if (stopWords.includes(topic)) continue;
+
+      if (!topicCounts[topic]) {
+        topicCounts[topic] = { count: 0, docs: [] };
+      }
+      topicCounts[topic].count++;
+      if (!topicCounts[topic].docs.includes(doc.id)) {
+        topicCounts[topic].docs.push(doc.id);
+      }
+    }
+  }
+
+  // Sort by count and get top topics
+  const trending = Object.entries(topicCounts)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, topLimit)
+    .map(([topic, data]) => ({
+      topic,
+      mentionCount: data.count,
+      documentCount: data.docs.length,
+    }));
+
+  // Get document types distribution
+  const typeDistribution = recentDocs.reduce((acc, doc) => {
+    acc[doc.type] = (acc[doc.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return c.json({
+    success: true,
+    data: {
+      period: { days: periodDays, start: start.toISOString() },
+      trending,
+      recentActivity: {
+        documentsUpdated: recentDocs.length,
+        typeDistribution,
+      },
+      recentDocuments: recentDocs.slice(0, 10).map(d => ({
+        id: d.id,
+        path: d.path,
+        title: d.title,
+        type: d.type,
+        updatedAt: d.updatedAt,
+      })),
+    },
+  });
+});
+
+// Get engagement summary across all repositories
+app.get('/engagement', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const { days } = c.req.query();
+
+  const periodDays = days ? parseInt(days, 10) : 30;
+  const start = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+  const orgRepos = await prisma.repository.findMany({
+    where: { organizationId: orgId },
+    select: { id: true, name: true },
+  });
+  const repoIds = orgRepos.map((r) => r.id);
+  const repoMap = new Map(orgRepos.map(r => [r.id, r.name]));
+
+  // Get document counts and recent updates
+  const documents = await prisma.document.findMany({
+    where: { repositoryId: { in: repoIds } },
+    select: {
+      id: true,
+      repositoryId: true,
+      type: true,
+      updatedAt: true,
+      content: true,
+    },
+  });
+
+  // Calculate engagement metrics per repository
+  const repoMetrics = new Map<string, {
+    docs: number;
+    freshDocs: number;
+    staleDocs: number;
+    totalWords: number;
+    hasCodeExamples: number;
+  }>();
+
+  const now = new Date();
+  for (const doc of documents) {
+    const repoId = doc.repositoryId;
+    if (!repoMetrics.has(repoId)) {
+      repoMetrics.set(repoId, {
+        docs: 0,
+        freshDocs: 0,
+        staleDocs: 0,
+        totalWords: 0,
+        hasCodeExamples: 0,
+      });
+    }
+
+    const metrics = repoMetrics.get(repoId)!;
+    metrics.docs++;
+
+    const daysSinceUpdate = Math.floor((now.getTime() - doc.updatedAt.getTime()) / (24 * 60 * 60 * 1000));
+    if (daysSinceUpdate <= 7) metrics.freshDocs++;
+    else if (daysSinceUpdate > 30) metrics.staleDocs++;
+
+    const wordCount = doc.content.split(/\s+/).filter(w => w.length > 0).length;
+    metrics.totalWords += wordCount;
+
+    if (doc.content.includes('```')) metrics.hasCodeExamples++;
+  }
+
+  // Aggregate across all repos
+  let totalDocs = 0;
+  let totalFresh = 0;
+  let totalStale = 0;
+  let totalWords = 0;
+  let totalWithExamples = 0;
+
+  for (const metrics of repoMetrics.values()) {
+    totalDocs += metrics.docs;
+    totalFresh += metrics.freshDocs;
+    totalStale += metrics.staleDocs;
+    totalWords += metrics.totalWords;
+    totalWithExamples += metrics.hasCodeExamples;
+  }
+
+  // Calculate engagement scores
+  const freshnessScore = totalDocs > 0 ? Math.round((totalFresh / totalDocs) * 100) : 0;
+  const exampleCoverage = totalDocs > 0 ? Math.round((totalWithExamples / totalDocs) * 100) : 0;
+  const avgWordsPerDoc = totalDocs > 0 ? Math.round(totalWords / totalDocs) : 0;
+
+  // Overall engagement score (weighted average)
+  const overallScore = Math.round(
+    freshnessScore * 0.4 +
+    Math.min(100, exampleCoverage * 1.5) * 0.3 +
+    Math.min(100, (avgWordsPerDoc / 10)) * 0.3
+  );
+
+  return c.json({
+    success: true,
+    data: {
+      period: { days: periodDays, start: start.toISOString() },
+      overall: {
+        totalDocuments: totalDocs,
+        totalRepositories: orgRepos.length,
+        engagementScore: overallScore,
+        freshnessScore,
+        exampleCoverage,
+        avgWordsPerDocument: avgWordsPerDoc,
+      },
+      distribution: {
+        fresh: totalFresh,
+        aging: totalDocs - totalFresh - totalStale,
+        stale: totalStale,
+      },
+      byRepository: Array.from(repoMetrics.entries()).map(([repoId, metrics]) => ({
+        repositoryId: repoId,
+        repositoryName: repoMap.get(repoId) || 'Unknown',
+        documents: metrics.docs,
+        freshDocuments: metrics.freshDocs,
+        staleDocuments: metrics.staleDocs,
+        avgWordsPerDoc: metrics.docs > 0 ? Math.round(metrics.totalWords / metrics.docs) : 0,
+        exampleCoverage: metrics.docs > 0 ? Math.round((metrics.hasCodeExamples / metrics.docs) * 100) : 0,
+      })).sort((a, b) => b.documents - a.documents),
+    },
+  });
+});
+
 export { app as analyticsRoutes };
