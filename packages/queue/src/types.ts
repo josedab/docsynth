@@ -30,6 +30,12 @@ export const QUEUE_NAMES = {
   VERSION_BUMP: 'version-bump',
   VIDEO_GENERATION: 'video-generation',
   COMPLIANCE_SCAN: 'compliance-scan',
+  // New killer features
+  DRIFT_PREDICTION: 'drift-prediction',
+  MULTI_AGENT_DOC: 'multi-agent-doc',
+  ONBOARDING_PATH: 'onboarding-path',
+  PLAYGROUND_SESSION: 'playground-session',
+  CITATION_INDEX: 'citation-index',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -254,6 +260,54 @@ export interface ComplianceScanJobData {
 }
 
 // ============================================================================
+// New Killer Feature Job Data Types
+// ============================================================================
+
+// Drift Prediction - Proactive Documentation Drift Detection
+export interface DriftPredictionJobData {
+  repositoryId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  scheduled?: boolean;
+}
+
+// Multi-Agent Documentation - Agent-based Doc Generation
+export interface MultiAgentDocJobData {
+  repositoryId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  prNumber?: number;
+  runType: 'generation' | 'review' | 'update';
+  targetPaths?: string[];
+}
+
+// Onboarding Path - Personalized Developer Onboarding
+export interface OnboardingPathJobData {
+  repositoryId: string;
+  action: 'generate' | 'update' | 'personalize';
+  targetRole?: string;
+  userId?: string;
+  pathId?: string;
+}
+
+// Playground Session - Interactive Code Sandboxes
+export interface PlaygroundSessionJobData {
+  playgroundId: string;
+  userId?: string;
+  code: string;
+  action: 'run' | 'test' | 'validate';
+}
+
+// Citation Index - Smart Search with Citations
+export interface CitationIndexJobData {
+  repositoryId: string;
+  documentId?: string;
+  fullReindex?: boolean;
+}
+
+// ============================================================================
 // Job Data Map (maps queue names to their data types)
 // ============================================================================
 
@@ -284,4 +338,10 @@ export type JobDataMap = {
   [QUEUE_NAMES.VERSION_BUMP]: VersionBumpJobData;
   [QUEUE_NAMES.VIDEO_GENERATION]: VideoGenerationJobData;
   [QUEUE_NAMES.COMPLIANCE_SCAN]: ComplianceScanJobData;
+  // New killer feature job data mappings
+  [QUEUE_NAMES.DRIFT_PREDICTION]: DriftPredictionJobData;
+  [QUEUE_NAMES.MULTI_AGENT_DOC]: MultiAgentDocJobData;
+  [QUEUE_NAMES.ONBOARDING_PATH]: OnboardingPathJobData;
+  [QUEUE_NAMES.PLAYGROUND_SESSION]: PlaygroundSessionJobData;
+  [QUEUE_NAMES.CITATION_INDEX]: CitationIndexJobData;
 };
