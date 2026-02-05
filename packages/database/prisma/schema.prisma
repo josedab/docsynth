@@ -29,6 +29,7 @@ model Organization {
   apiKeys      ApiKey[]
   integrations Integration[]
   docTemplates DocTemplate[]
+  migrations   Migration[]
 
   @@map("organizations")
 }
@@ -114,6 +115,11 @@ model Repository {
   architectureDiagrams ArchitectureDiagram[]
   prReviewThreads PRReviewThread[]
   coverageGateConfig CoverageGateConfig?
+  docImpactConfig DocImpactConfig?
+  docImpactAnalyses DocImpactAnalysis[]
+  migrations      Migration[]
+  batchNLEdits    BatchNLEdit[]
+  onboardingPathsV2 OnboardingPathV2[]
 
   @@index([organizationId])
   @@index([installationId])
@@ -143,6 +149,7 @@ model Document {
   codeExamples   CodeExample[]
   generatedTests GeneratedTest[]
   translations   Translation[]
+  nlEdits        NLEdit[]
 
   @@unique([repositoryId, path])
   @@index([repositoryId, type])
@@ -2004,3 +2011,425 @@ model ComplianceControlAssessment {
   @@index([reportId])
   @@map("compliance_control_assessments")
 }
+
+// ============================================================================
+// Community Discussions (Enhanced Community Features)
+// ============================================================================
+
+model CommunityDiscussion {
+  id              String    @id @default(cuid())
+  repositoryId    String    @map("repository_id")
+  authorId        String    @map("author_id")
+  title           String
+  content         String    @db.Text
+  category        String    @default("general") // general, question, suggestion, issue
+  status          String    @default("open") // open, resolved, closed
+  isPinned        Boolean   @default(false) @map("is_pinned")
+  upvotes         Int       @default(0)
+  viewCount       Int       @default(0) @map("view_count")
+  replyCount      Int       @default(0) @map("reply_count")
+  acceptedReplyId String?   @map("accepted_reply_id")
+  resolvedAt      DateTime? @map("resolved_at")
+  documentPath    String?   @map("document_path")
+  tags            Json      @default("[]")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  replies         CommunityReply[]
+
+  @@index([repositoryId, status])
+  @@index([repositoryId, category])
+  @@index([authorId])
+  @@map("community_discussions")
+}
+
+model CommunityReply {
+  id              String    @id @default(cuid())
+  discussionId    String    @map("discussion_id")
+  authorId        String    @map("author_id")
+  content         String    @db.Text
+  upvotes         Int       @default(0)
+  isAccepted      Boolean   @default(false) @map("is_accepted")
+  parentReplyId   String?   @map("parent_reply_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  discussion      CommunityDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
+  @@index([discussionId])
+  @@index([authorId])
+  @@map("community_replies")
+}
+
+model CommunityBadge {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  slug            String   @unique
+  description     String   @db.Text
+  icon            String   // Icon identifier or URL
+  category        String   // contribution, quality, community, milestone
+  tier            String   @default("bronze") // bronze, silver, gold, platinum
+  requirement     Json     @default("{}") // Conditions to earn this badge
+  pointsAwarded   Int      @default(0) @map("points_awarded")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  awards          BadgeAward[]
+
+  @@index([category])
+  @@map("community_badges")
+}
+
+model BadgeAward {
+  id              String   @id @default(cuid())
+  badgeId         String   @map("badge_id")
+  userId          String   @map("user_id")
+  repositoryId    String?  @map("repository_id")
+  awardedBy       String?  @map("awarded_by") // null if system-awarded
+  reason          String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  badge           CommunityBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([badgeId, userId, repositoryId])
+  @@index([userId])
+  @@map("badge_awards")
+}
+
+// ============================================================================
+// Video Documentation Enhanced (Chapters & Series)
+// ============================================================================
+
+model VideoChapter {
+  id              String   @id @default(cuid())
+  videoDocId      String   @map("video_doc_id")
+  title           String
+  description     String?  @db.Text
+  startTime       Int      @map("start_time") // seconds
+  endTime         Int?     @map("end_time")   // seconds
+  orderIndex      Int      @map("order_index")
+  thumbnailUrl    String?  @map("thumbnail_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([videoDocId, orderIndex])
+  @@map("video_chapters")
+}
+
+model VideoSeries {
+  id              String   @id @default(cuid())
+  repositoryId    String   @map("repository_id")
+  title           String
+  description     String?  @db.Text
+  thumbnailUrl    String?  @map("thumbnail_url")
+  isPublished     Boolean  @default(false) @map("is_published")
+  videoIds        Json     @default("[]") @map("video_ids") // Ordered array of VideoDoc IDs
+  totalDuration   Int      @default(0) @map("total_duration") // seconds
+  viewCount       Int      @default(0) @map("view_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([repositoryId])
+  @@map("video_series")
+}
+
+// ============================================================================
+// LLM Usage Monitoring (Observability)
+// ============================================================================
+
+model LLMUsageLog {
+  id              String   @id @default(cuid())
+  organizationId  String   @map("organization_id")
+  repositoryId    String?  @map("repository_id")
+  userId          String?  @map("user_id")
+
+  // Request details
+  provider        String   // anthropic, openai
+  model           String
+  operation       String   // generate, completion, embedding, chat
+  feature         String   // ai-doc-editor, playground-hint, self-healing, etc.
+
+  // Token usage
+  inputTokens     Int      @map("input_tokens")
+  outputTokens    Int      @map("output_tokens")
+  totalTokens     Int      @map("total_tokens")
+
+  // Cost estimation (in cents)
+  estimatedCost   Float    @map("estimated_cost")
+
+  // Performance
+  latencyMs       Int      @map("latency_ms")
+  success         Boolean  @default(true)
+  errorCode       String?  @map("error_code")
+
+  // Context
+  requestId       String?  @map("request_id")
+  metadata        Json     @default("{}")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId, createdAt])
+  @@index([repositoryId, createdAt])
+  @@index([feature, createdAt])
+  @@index([provider, model])
+  @@map("llm_usage_logs")
+}
+
+model LLMUsageSummary {
+  id              String   @id @default(cuid())
+  organizationId  String   @map("organization_id")
+  repositoryId    String?  @map("repository_id")
+  period          String   // hourly, daily, weekly, monthly
+  periodStart     DateTime @map("period_start")
+  periodEnd       DateTime @map("period_end")
+
+  // Aggregates
+  totalRequests   Int      @default(0) @map("total_requests")
+  successfulReqs  Int      @default(0) @map("successful_reqs")
+  failedReqs      Int      @default(0) @map("failed_reqs")
+
+  totalInputTokens  Int    @default(0) @map("total_input_tokens")
+  totalOutputTokens Int    @default(0) @map("total_output_tokens")
+  totalCost         Float  @default(0) @map("total_cost")
+
+  // By provider
+  byProvider      Json     @default("{}") @map("by_provider")
+  // By feature
+  byFeature       Json     @default("{}") @map("by_feature")
+  // By model
+  byModel         Json     @default("{}") @map("by_model")
+
+  avgLatencyMs    Float    @default(0) @map("avg_latency_ms")
+  p95LatencyMs    Float    @default(0) @map("p95_latency_ms")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, repositoryId, period, periodStart])
+  @@index([organizationId, period])
+  @@map("llm_usage_summaries")
+}
+
+// ============================================================================
+// Self-Healing Documentation Tracking
+// ============================================================================
+
+model SelfHealingRun {
+  id              String    @id @default(cuid())
+  repositoryId    String    @map("repository_id")
+  triggeredBy     String    @default("scheduled") @map("triggered_by") // scheduled, manual, drift_detected
+  status          String    @default("pending") // pending, running, completed, failed
+
+  // Configuration used
+  confidenceThreshold Float @map("confidence_threshold")
+  requireReview       Boolean @map("require_review")
+  maxSections         Int    @map("max_sections")
+
+  // Results
+  sectionsAnalyzed    Int    @default(0) @map("sections_analyzed")
+  sectionsRegenerated Int    @default(0) @map("sections_regenerated")
+  sectionsPending     Int    @default(0) @map("sections_pending")
+  sectionsFailed      Int    @default(0) @map("sections_failed")
+
+  details             Json   @default("[]")
+  error               String? @db.Text
+
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId, status])
+  @@index([repositoryId, createdAt])
+  @@map("self_healing_runs")
+}
+
+// ============================================================================
+// Migration (Feature 3: Smart Migration Engine)
+// ============================================================================
+
+model Migration {
+  id               String    @id @default(cuid())
+  source           String    // confluence, notion, gitbook, markdown, readme
+  organizationId   String    @map("organization_id")
+  repositoryId     String    @map("repository_id")
+
+  config           Json      // Full migration configuration
+  status           String    @default("pending") // pending, running, completed, failed, partial
+
+  // Statistics
+  totalDocuments     Int      @default(0) @map("total_documents")
+  importedDocuments  Int      @default(0) @map("imported_documents")
+  skippedDocuments   Int      @default(0) @map("skipped_documents")
+  failedDocuments    Int      @default(0) @map("failed_documents")
+
+  // Details
+  documents        Json      @default("[]") // Array of MigratedDocument
+  errors           Json      @default("[]") // Array of error messages
+
+  startedAt        DateTime  @default(now()) @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  repository       Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([source])
+  @@index([status])
+  @@index([startedAt])
+  @@map("migrations")
+}
+
+// ============================================================================
+// Natural Language Doc Editing (Feature 8)
+// ============================================================================
+
+model NLEdit {
+  id              String    @id @default(cuid())
+  documentId      String    @map("document_id")
+  instruction     String    @db.Text
+  originalContent String    @map("original_content") @db.Text
+  editedContent   String    @map("edited_content") @db.Text
+  diff            String    @db.Text
+  sectionsModified Json     @default("[]") @map("sections_modified") // Array of section headings
+  confidence      Float     @default(0.0)
+  status          String    @default("preview") // preview, applied, rejected
+  metadata        Json      @default("{}")
+
+  appliedAt       DateTime? @map("applied_at")
+  rejectedAt      DateTime? @map("rejected_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  document        Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("nl_edits")
+}
+
+model BatchNLEdit {
+  id                String    @id @default(cuid())
+  repositoryId      String    @map("repository_id")
+  instruction       String    @db.Text
+  scope             String    @default("all") // all, api-docs, guides, readme
+  totalDocuments    Int       @default(0) @map("total_documents")
+  editedDocuments   Int       @default(0) @map("edited_documents")
+  skippedDocuments  Int       @default(0) @map("skipped_documents")
+  results           Json      @default("[]") // Array of edit IDs
+
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  repository        Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([createdAt])
+  @@map("batch_nl_edits")
+}
+
+// ============================================================================
+// Doc Impact Analysis
+// ============================================================================
+
+model DocImpactConfig {
+  id                    String     @id @default(cuid())
+  repositoryId          String     @unique @map("repository_id")
+  repository            Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  // Configuration
+  enabled               Boolean    @default(true)
+  confidenceThreshold   Float      @default(0.5) @map("confidence_threshold") // 0-1
+  autoComment           Boolean    @default(true) @map("auto_comment")
+  riskThreshold         String     @default("low") @map("risk_threshold") // low, medium, high
+
+  // Scope
+  includePaths          Json       @default("[]") @map("include_paths")
+  excludePaths          Json       @default("[]") @map("exclude_paths")
+
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
+
+  @@map("doc_impact_configs")
+}
+
+model DocImpactAnalysis {
+  id                    String     @id @default(cuid())
+  repositoryId          String     @map("repository_id")
+  repository            Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  prNumber              Int        @map("pr_number")
+
+  // Impact data
+  impactedDocs          Json       @map("impacted_docs") // Array of ImpactedDocument
+  overallRisk           String     @map("overall_risk") // low, medium, high
+  summary               String
+
+  // Approval status
+  approved              Boolean    @default(false)
+  approvedAt            DateTime?  @map("approved_at")
+  approvedDocuments     Json       @default("[]") @map("approved_documents") // Array of document IDs
+
+  // Comment tracking
+  commentPosted         Boolean    @default(false) @map("comment_posted")
+  commentPostedAt       DateTime?  @map("comment_posted_at")
+
+  // Metadata
+  metadata              Json       @default("{}")
+
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
+
+  @@index([repositoryId])
+  @@index([prNumber])
+  @@index([repositoryId, prNumber])
+  @@index([overallRisk])
+  @@index([createdAt])
+  @@map("doc_impact_analyses")
+}
+
+// ============================================================================
+// Personalized Developer Onboarding Paths V2 (Feature 5)
+// ============================================================================
+
+model OnboardingPathV2 {
+  id             String   @id @default(cuid())
+  repositoryId   String   @map("repository_id")
+  role           String   // frontend, backend, fullstack, data, devops, mobile, qa
+  title          String
+  description    String   @db.Text
+  estimatedHours Int      @map("estimated_hours")
+  modules        Json     @default("[]") // Array of OnboardingModule
+  prerequisites  Json     @default("[]") // Array of prerequisites
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  repository Repository              @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  progress   OnboardingProgressV2[]
+
+  @@index([repositoryId])
+  @@index([role])
+  @@index([createdAt])
+  @@map("onboarding_paths_v2")
+}
+
+model OnboardingProgressV2 {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  pathId            String   @map("path_id")
+  completedModules  Json     @default("[]") @map("completed_modules") // Array of module IDs
+  completedSteps    Json     @default("[]") @map("completed_steps") // Array of step IDs
+  currentModule     String?  @map("current_module")
+  completionPercent Int      @default(0) @map("completion_percent")
+  startedAt         DateTime @default(now()) @map("started_at")
+  lastActivityAt    DateTime @default(now()) @map("last_activity_at")
+
+  path OnboardingPathV2 @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pathId])
+  @@index([userId])
+  @@index([pathId])
+  @@index([lastActivityAt])
+  @@map("onboarding_progress_v2")
+}
+
