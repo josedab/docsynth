@@ -40,6 +40,17 @@ export const QUEUE_NAMES = {
   REVIEW_DOCUMENTATION: 'review-documentation',
   COVERAGE_GATE: 'coverage-gate',
   COMPLIANCE_ASSESSMENT: 'compliance-assessment',
+  // Follow-up feature queues
+  SELF_HEALING: 'self-healing',
+  ANALYTICS_COMPUTATION: 'analytics-computation',
+  LLM_USAGE_AGGREGATION: 'llm-usage-aggregation',
+  COMMUNITY_BADGE_CHECK: 'community-badge-check',
+  ROI_COMPUTATION: 'roi-computation',
+  DOC_IMPACT: 'doc-impact',
+  MIGRATION: 'migration',
+  NL_EDITOR: 'nl-editor',
+  POLLING: 'polling',
+  ORG_GRAPH_BUILDER: 'org-graph-builder',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -350,6 +361,120 @@ export interface ComplianceAssessmentJobData {
 }
 
 // ============================================================================
+// Follow-up Feature Job Data Types
+// ============================================================================
+
+// Self-Healing - Proactive documentation regeneration
+export interface SelfHealingJobData {
+  repositoryId: string;
+  triggeredBy: 'scheduled' | 'manual' | 'drift_detected';
+  confidenceThreshold?: number;
+  requireReview?: boolean;
+  maxSections?: number;
+  excludePatterns?: string[];
+}
+
+// Analytics Computation - Aggregate analytics data
+export interface AnalyticsComputationJobData {
+  repositoryId: string;
+  organizationId: string;
+  period: 'daily' | 'weekly' | 'monthly';
+  startDate?: string;
+  endDate?: string;
+}
+
+// LLM Usage Aggregation - Aggregate LLM usage metrics
+export interface LLMUsageAggregationJobData {
+  organizationId: string;
+  repositoryId?: string;
+  period: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  periodStart: string;
+  periodEnd: string;
+}
+
+// Community Badge Check - Check and award badges
+export interface CommunityBadgeCheckJobData {
+  userId: string;
+  repositoryId?: string;
+  triggerEvent: 'contribution_merged' | 'milestone_reached' | 'manual';
+  contributionId?: string;
+}
+
+// ROI Computation - Calculate documentation analytics and ROI
+export interface ROIComputationJobData {
+  organizationId: string;
+  period: 'daily' | 'weekly' | 'monthly';
+  startDate?: string;
+  endDate?: string;
+  sendEmail?: boolean;
+}
+
+// Natural Language Editor - Process NL doc edits
+export interface NLEditorJobData {
+  type: 'batch' | 'single';
+  repositoryId: string;
+  instruction: string;
+  targetDocuments?: string[];
+  scope?: 'all' | 'api-docs' | 'guides' | 'readme';
+  documentId?: string;
+  sectionHeading?: string;
+  context?: {
+    relatedCode?: string;
+    style?: string;
+  };
+}
+
+// Migration - Import docs from external sources
+export interface MigrationJobData {
+  migrationId: string;
+  config: {
+    source: 'confluence' | 'notion' | 'gitbook' | 'markdown' | 'readme';
+    connectionConfig: {
+      baseUrl?: string;
+      apiToken?: string;
+      spaceKey?: string;
+      databaseId?: string;
+      repoUrl?: string;
+    };
+    mappings: {
+      targetRepositoryId: string;
+      pathPrefix?: string;
+      docTypeMapping?: Record<string, string>;
+    };
+    options: {
+      preserveMetadata: boolean;
+      convertImages: boolean;
+      bidirectionalSync: boolean;
+      dryRun: boolean;
+    };
+  };
+  organizationId: string;
+}
+
+// Polling - Webhook-less change detection
+
+// Doc Impact Analysis - Analyze documentation impact for PRs
+export interface DocImpactJobData {
+  repositoryId: string;
+  prNumber: number;
+  installationId: number;
+  owner: string;
+  repo: string;
+}
+export interface PollingJobData {
+  repositoryId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  manual?: boolean;
+}
+
+// Org Graph Builder - Build multi-repo documentation graph
+export interface OrgGraphBuilderJobData {
+  organizationId: string;
+}
+
+// ============================================================================
 // Job Data Map (maps queue names to their data types)
 // ============================================================================
 
@@ -390,4 +515,15 @@ export type JobDataMap = {
   [QUEUE_NAMES.REVIEW_DOCUMENTATION]: ReviewDocumentationJobData;
   [QUEUE_NAMES.COVERAGE_GATE]: CoverageGateJobData;
   [QUEUE_NAMES.COMPLIANCE_ASSESSMENT]: ComplianceAssessmentJobData;
+  // Follow-up feature job data mappings
+  [QUEUE_NAMES.SELF_HEALING]: SelfHealingJobData;
+  [QUEUE_NAMES.ANALYTICS_COMPUTATION]: AnalyticsComputationJobData;
+  [QUEUE_NAMES.LLM_USAGE_AGGREGATION]: LLMUsageAggregationJobData;
+  [QUEUE_NAMES.COMMUNITY_BADGE_CHECK]: CommunityBadgeCheckJobData;
+  [QUEUE_NAMES.ROI_COMPUTATION]: ROIComputationJobData;
+  [QUEUE_NAMES.DOC_IMPACT]: DocImpactJobData;
+  [QUEUE_NAMES.MIGRATION]: MigrationJobData;
+  [QUEUE_NAMES.POLLING]: PollingJobData;
+  [QUEUE_NAMES.ORG_GRAPH_BUILDER]: OrgGraphBuilderJobData;
+  [QUEUE_NAMES.NL_EDITOR]: NLEditorJobData;
 };
