@@ -1683,3 +1683,263 @@ export const BOT_COMMANDS: BotCommand[] = [
   { command: '/docs subscribe', description: 'Subscribe to alerts', usage: '/docs subscribe <repo> <type>', handler: 'handleSubscribe' },
   { command: '/docs help', description: 'Show help', usage: '/docs help', handler: 'handleHelp' },
 ];
+
+// ============================================================================
+// Next-Gen V2: GitOps Configuration
+// ============================================================================
+
+export interface GitOpsConfig {
+  version: '1';
+  project?: { name?: string; description?: string; defaultLanguage?: string; languages?: string[] };
+  triggers?: { onPRMerge?: boolean; onPush?: boolean; branches?: string[]; paths?: { include?: string[]; exclude?: string[] }; schedule?: string };
+  documents?: Array<{ type: DocumentType; path: string; enabled?: boolean; template?: string; autoUpdate?: boolean }>;
+  quality?: { minCoveragePercent?: number; minHealthScore?: number; failOnDecrease?: boolean; maxDecreasePercent?: number; blockMerge?: boolean };
+  style?: { tone?: 'formal' | 'casual' | 'technical'; includeExamples?: boolean; maxSectionLength?: number; customInstructions?: string };
+  integrations?: { slack?: { channel?: string; notifyOnGeneration?: boolean }; jira?: { project?: string; linkIssues?: boolean }; github?: { createPRComments?: boolean; createCheckRuns?: boolean } };
+}
+
+// ============================================================================
+// Next-Gen V2: Federated Documentation Hub
+// ============================================================================
+
+export interface FederatedHub {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string;
+  slug: string;
+  repositoryIds: string[];
+  settings: FederatedHubSettings;
+  navigationTree: NavigationNode[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FederatedHubSettings {
+  customDomain?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  branding?: { logo?: string; primaryColor?: string; title?: string };
+  access?: 'public' | 'org-only' | 'private';
+  search?: { enabled?: boolean; includeCode?: boolean };
+}
+
+export interface NavigationNode {
+  id: string;
+  label: string;
+  type: 'repository' | 'document' | 'section' | 'link';
+  path?: string;
+  repositoryId?: string;
+  documentId?: string;
+  children?: NavigationNode[];
+}
+
+// ============================================================================
+// Next-Gen V2: PR Documentation Review
+// ============================================================================
+
+export interface PRDocReview {
+  id: string;
+  repositoryId: string;
+  prNumber: number;
+  status: 'pending' | 'analyzing' | 'completed' | 'failed';
+  analysis: PRDocReviewAnalysis;
+  comments: PRDocReviewComment[];
+  postedToSCM: boolean;
+  createdAt: Date;
+}
+
+export interface PRDocReviewAnalysis {
+  undocumentedExports: Array<{ name: string; filePath: string; line: number; type: string }>;
+  brokenExamples: Array<{ filePath: string; line: number; issue: string }>;
+  inconsistentTerms: Array<{ term: string; variants: string[]; suggestedTerm: string }>;
+  staleSections: Array<{ documentPath: string; section: string; reason: string }>;
+  suggestedFixes: Array<{ filePath: string; line: number; suggestion: string; confidence: number }>;
+}
+
+export interface PRDocReviewComment {
+  id: string;
+  filePath: string;
+  line: number;
+  body: string;
+  severity: 'info' | 'warning' | 'error';
+  confidence: number;
+  suggestion?: string;
+}
+
+// ============================================================================
+// Next-Gen V2: Collaborative Document Editor
+// ============================================================================
+
+export interface EditingSession {
+  id: string;
+  documentId: string;
+  status: 'active' | 'closed' | 'merged';
+  documentContent: string;
+  participants: SessionParticipant[];
+  operations: CRDTOperation[];
+  approvals: SessionApproval[];
+  createdAt: Date;
+}
+
+export interface SessionParticipant {
+  userId: string;
+  cursor: { line: number; column: number };
+  lastActive: Date;
+  color: string;
+}
+
+export interface CRDTOperation {
+  type: 'insert' | 'delete' | 'format';
+  position: number;
+  content?: string;
+  length?: number;
+  format?: Record<string, unknown>;
+  userId: string;
+  timestamp: Date;
+}
+
+export interface SessionApproval {
+  userId: string;
+  status: 'approved' | 'request_changes';
+  comment?: string;
+  timestamp: Date;
+}
+
+// ============================================================================
+// Next-Gen V2: API Changelog & Breaking Changes
+// ============================================================================
+
+export interface APIChangelog {
+  id: string;
+  repositoryId: string;
+  version: string;
+  baseRef: string;
+  headRef: string;
+  content: string;
+  analysis: APIChangeAnalysis;
+  publishedTo: string[];
+  createdAt: Date;
+}
+
+export interface APIChangeAnalysis {
+  addedEndpoints: EndpointChange[];
+  modifiedEndpoints: EndpointChange[];
+  deprecatedEndpoints: EndpointChange[];
+  removedEndpoints: EndpointChange[];
+  schemaChanges: SchemaChange[];
+  breakingChanges: BreakingChange[];
+  summary: string;
+}
+
+export interface EndpointChange {
+  method: string;
+  path: string;
+  description: string;
+  breaking: boolean;
+}
+
+export interface SchemaChange {
+  schemaName: string;
+  changeType: 'added' | 'modified' | 'removed';
+  details: string;
+  breaking: boolean;
+}
+
+export interface BreakingChange {
+  type: 'endpoint_removed' | 'field_removed' | 'type_changed' | 'auth_changed' | 'response_changed';
+  path: string;
+  description: string;
+  migrationHint: string;
+}
+
+// ============================================================================
+// Next-Gen V2: Executive Reports
+// ============================================================================
+
+export interface ExecutiveReport {
+  id: string;
+  organizationId: string;
+  format: 'json' | 'csv' | 'pdf';
+  period: 'weekly' | 'monthly' | 'quarterly';
+  startDate: Date;
+  endDate: Date;
+  metrics: ExecutiveMetrics;
+  generatedAt: Date;
+}
+
+export interface ExecutiveMetrics {
+  hoursSaved: number;
+  costPerDoc: number;
+  documentsFreshPercent: number;
+  coveragePercent: number;
+  teamAdoption: number;
+  aiEfficiency: number;
+  docsGenerated: number;
+  docsUpdated: number;
+  driftsCaught: number;
+  breakingChangesDetected: number;
+}
+
+export interface KPIScorecard {
+  documentationFreshness: { score: number; trend: 'up' | 'down' | 'stable' };
+  coverage: { score: number; trend: 'up' | 'down' | 'stable' };
+  teamAdoption: { score: number; trend: 'up' | 'down' | 'stable' };
+  aiEfficiency: { score: number; trend: 'up' | 'down' | 'stable' };
+}
+
+// ============================================================================
+// Next-Gen V2: SDK Documentation
+// ============================================================================
+
+export type SDKLanguage = 'python' | 'javascript' | 'typescript' | 'go' | 'java' | 'ruby' | 'csharp' | 'php' | 'rust' | 'swift';
+
+export interface SDKDoc {
+  id: string;
+  repositoryId: string;
+  language: SDKLanguage;
+  version: string;
+  content: string;
+  sections: SDKSection[];
+  examples: SDKCodeExample[];
+  examplesValid: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SDKSection {
+  title: string;
+  content: string;
+  codeBlocks: Array<{ language: string; code: string; description: string }>;
+}
+
+export interface SDKCodeExample {
+  language: SDKLanguage;
+  title: string;
+  code: string;
+  description: string;
+  endpoint?: string;
+}
+
+// ============================================================================
+// Next-Gen V2: Self-Hosted Deployment
+// ============================================================================
+
+export interface DeploymentConfig {
+  llmProvider: 'anthropic' | 'openai' | 'ollama' | 'azure-openai' | 'aws-bedrock' | 'vllm';
+  scmProvider: 'github' | 'gitlab' | 'bitbucket';
+  selfHosted: boolean;
+  airGapped: boolean;
+  features: {
+    vectorSearch: boolean;
+    videoGeneration: boolean;
+    compliance: boolean;
+  };
+}
+
+export interface LLMProviderStatus {
+  name: string;
+  available: boolean;
+  selfHosted: boolean;
+  model?: string;
+  latencyMs?: number;
+}
