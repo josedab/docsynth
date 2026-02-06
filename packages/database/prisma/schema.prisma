@@ -2433,3 +2433,188 @@ model OnboardingProgressV2 {
   @@map("onboarding_progress_v2")
 }
 
+// ============================================================================
+// Next-Gen V2: Federated Documentation Hub
+// ============================================================================
+
+model FederatedHub {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  name           String
+  description    String   @default("")
+  slug           String
+  settings       Json     @default("{}")
+  navigationTree Json     @default("[]") @map("navigation_tree")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  repositories FederatedHubRepository[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("federated_hubs")
+}
+
+model FederatedHubRepository {
+  id           String   @id @default(cuid())
+  hubId        String   @map("hub_id")
+  repositoryId String   @map("repository_id")
+  displayOrder Int      @default(0) @map("display_order")
+  addedAt      DateTime @default(now()) @map("added_at")
+
+  hub FederatedHub @relation(fields: [hubId], references: [id], onDelete: Cascade)
+
+  @@unique([hubId, repositoryId])
+  @@map("federated_hub_repositories")
+}
+
+// ============================================================================
+// Next-Gen V2: PR Documentation Reviews
+// ============================================================================
+
+model PRDocReview {
+  id             String   @id @default(cuid())
+  repositoryId   String   @map("repository_id")
+  prNumber       Int      @map("pr_number")
+  status         String   @default("pending") // pending, analyzing, completed, failed
+  analysis       Json     @default("{}") // undocumented exports, broken examples, etc.
+  comments       Json     @default("[]") // generated review comments
+  postedToSCM    Boolean  @default(false) @map("posted_to_scm")
+  feedbackStats  Json     @default("{}") @map("feedback_stats") // helpful/not helpful counts
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([repositoryId, prNumber])
+  @@map("pr_doc_reviews")
+}
+
+// ============================================================================
+// Next-Gen V2: Collaborative Editing Sessions
+// ============================================================================
+
+model EditingSession {
+  id              String   @id @default(cuid())
+  documentId      String   @map("document_id")
+  status          String   @default("active") // active, closed, merged
+  documentContent String   @db.Text @map("document_content")
+  participants    Json     @default("[]")
+  operations      Json     @default("[]")
+  approvals       Json     @default("[]")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  closedAt        DateTime? @map("closed_at")
+
+  comments EditingSessionComment[]
+
+  @@index([documentId])
+  @@index([status])
+  @@map("editing_sessions")
+}
+
+model EditingSessionComment {
+  id        String    @id @default(cuid())
+  sessionId String    @map("session_id")
+  userId    String    @map("user_id")
+  content   String    @db.Text
+  position  Json      @default("{}") // { line, column }
+  parentId  String?   @map("parent_id")
+  resolved  Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  session EditingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("editing_session_comments")
+}
+
+// ============================================================================
+// Next-Gen V2: API Changelogs & Breaking Change Alerts
+// ============================================================================
+
+model APIChangelog {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  version      String
+  baseRef      String   @map("base_ref")
+  headRef      String   @map("head_ref")
+  content      String   @db.Text
+  analysis     Json     @default("{}")
+  publishedTo  Json     @default("[]") @map("published_to")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId])
+  @@map("api_changelogs")
+}
+
+model BreakingChangeSubscriber {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  webhook      String?
+  email        String?
+  slackChannel String?  @map("slack_channel")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([repositoryId])
+  @@map("breaking_change_subscribers")
+}
+
+// ============================================================================
+// Next-Gen V2: Executive Reports
+// ============================================================================
+
+model ExecutiveReport {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  format         String   // json, csv, pdf
+  period         String   // weekly, monthly, quarterly
+  startDate      DateTime @map("start_date")
+  endDate        DateTime @map("end_date")
+  content        Json     @default("{}")
+  metrics        Json     @default("{}")
+  generatedAt    DateTime @default(now()) @map("generated_at")
+
+  @@index([organizationId])
+  @@map("executive_reports")
+}
+
+model ReportSchedule {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  frequency      String   // weekly, monthly
+  recipients     Json     @default("[]") // email addresses
+  nextRunAt      DateTime @map("next_run_at")
+  lastRunAt      DateTime? @map("last_run_at")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId])
+  @@index([nextRunAt])
+  @@map("report_schedules")
+}
+
+// ============================================================================
+// Next-Gen V2: SDK Documentation
+// ============================================================================
+
+model SDKDoc {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  language     String   // python, javascript, go, java, etc.
+  version      String   @default("1.0.0")
+  content      String   @db.Text
+  sections     Json     @default("[]")
+  examples     Json     @default("[]")
+  apiSpecHash  String?  @map("api_spec_hash")
+  examplesValid Boolean @default(true) @map("examples_valid")
+  publishedTo  Json     @default("[]") @map("published_to")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([repositoryId, language])
+  @@index([repositoryId])
+  @@map("sdk_docs")
+}
+
