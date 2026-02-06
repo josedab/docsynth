@@ -51,6 +51,15 @@ export const QUEUE_NAMES = {
   NL_EDITOR: 'nl-editor',
   POLLING: 'polling',
   ORG_GRAPH_BUILDER: 'org-graph-builder',
+  // Next-gen v2 feature queues
+  PR_DOC_REVIEW: 'pr-doc-review',
+  FEDERATED_HUB: 'federated-hub',
+  GITOPS_SYNC: 'gitops-sync',
+  ONBOARDING_COPILOT: 'onboarding-copilot',
+  COLLABORATIVE_EDITOR: 'collaborative-editor',
+  API_CHANGELOG: 'api-changelog',
+  EXECUTIVE_REPORT: 'executive-report',
+  SDK_DOCS_GENERATION: 'sdk-docs-generation',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -475,6 +484,89 @@ export interface OrgGraphBuilderJobData {
 }
 
 // ============================================================================
+// Next-Gen V2 Feature Job Data Types
+// ============================================================================
+
+// PR Documentation Review - AI review comments on PRs
+export interface PRDocReviewJobData {
+  repositoryId: string;
+  prNumber: number;
+  installationId: number;
+  owner: string;
+  repo: string;
+  autoComment?: boolean;
+}
+
+// Federated Hub - Multi-repo documentation aggregation
+export interface FederatedHubJobData {
+  hubId: string;
+  organizationId: string;
+  action: 'index' | 'reindex' | 'update_navigation';
+  repositoryIds?: string[];
+}
+
+// GitOps Sync - Config-driven documentation regeneration
+export interface GitOpsSyncJobData {
+  repositoryId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  configPath: string;
+  changedPaths?: string[];
+}
+
+// Onboarding Copilot - Personalized onboarding path generation
+export interface OnboardingCopilotJobData {
+  repositoryId: string;
+  userId: string;
+  role: string;
+  teamContext?: string;
+  pathId?: string;
+}
+
+// Collaborative Editor - Document session operations
+export interface CollaborativeEditorJobData {
+  sessionId: string;
+  action: 'persist' | 'cleanup' | 'merge';
+  documentId?: string;
+}
+
+// API Changelog - API diff and changelog generation
+export interface APIChangelogJobData {
+  repositoryId: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  baseRef: string;
+  headRef: string;
+  specPath?: string;
+}
+
+// Executive Report - ROI report generation
+export interface ExecutiveReportJobData {
+  organizationId: string;
+  format: 'json' | 'csv' | 'pdf';
+  period: 'weekly' | 'monthly' | 'quarterly';
+  startDate?: string;
+  endDate?: string;
+  recipients?: string[];
+}
+
+// SDK Documentation Generation - Multi-language SDK docs
+export interface SDKDocsGenerationJobData {
+  repositoryId: string;
+  apiSpecPath?: string;
+  apiSpecContent?: string;
+  languages: string[];
+  options: {
+    includeExamples: boolean;
+    includeErrorHandling: boolean;
+    includeAuth: boolean;
+    packageName?: string;
+  };
+}
+
+// ============================================================================
 // Job Data Map (maps queue names to their data types)
 // ============================================================================
 
@@ -526,4 +618,13 @@ export type JobDataMap = {
   [QUEUE_NAMES.POLLING]: PollingJobData;
   [QUEUE_NAMES.ORG_GRAPH_BUILDER]: OrgGraphBuilderJobData;
   [QUEUE_NAMES.NL_EDITOR]: NLEditorJobData;
+  // Next-gen v2 feature job data mappings
+  [QUEUE_NAMES.PR_DOC_REVIEW]: PRDocReviewJobData;
+  [QUEUE_NAMES.FEDERATED_HUB]: FederatedHubJobData;
+  [QUEUE_NAMES.GITOPS_SYNC]: GitOpsSyncJobData;
+  [QUEUE_NAMES.ONBOARDING_COPILOT]: OnboardingCopilotJobData;
+  [QUEUE_NAMES.COLLABORATIVE_EDITOR]: CollaborativeEditorJobData;
+  [QUEUE_NAMES.API_CHANGELOG]: APIChangelogJobData;
+  [QUEUE_NAMES.EXECUTIVE_REPORT]: ExecutiveReportJobData;
+  [QUEUE_NAMES.SDK_DOCS_GENERATION]: SDKDocsGenerationJobData;
 };
