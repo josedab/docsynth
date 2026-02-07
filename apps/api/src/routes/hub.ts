@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { prisma } from '@docsynth/database';
 import { createLogger } from '@docsynth/utils';
+import { cacheService, CACHE_KEYS, CACHE_TTLS } from '../services/cache.service.js';
 
 const log = createLogger('hub-routes');
 
@@ -389,6 +390,12 @@ hubRoutes.get('/:hubId/navigation', async (c) => {
   const { hubId } = c.req.param();
 
   try {
+    // Try to get from cache first
+    const cached = await cacheService.getHubNavigation<{ success: boolean; data: unknown }>(hubId);
+    if (cached) {
+      return c.json(cached);
+    }
+
     const hub = await db.documentationHub.findUnique({ where: { id: hubId } });
     if (!hub) {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Hub not found' } }, 404);
@@ -420,7 +427,7 @@ hubRoutes.get('/:hubId/navigation', async (c) => {
     const navigation = repositories.map((repo: any) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const byType: Record<string, any[]> = {};
-      
+
       for (const doc of repo.documents) {
         if (!byType[doc.type]) {
           byType[doc.type] = [];
@@ -444,7 +451,12 @@ hubRoutes.get('/:hubId/navigation', async (c) => {
       };
     });
 
-    return c.json({ success: true, data: navigation });
+    const response = { success: true, data: navigation };
+
+    // Cache the navigation
+    await cacheService.cacheHubNavigation(hubId, response);
+
+    return c.json(response);
   } catch (error) {
     log.error({ error, hubId }, 'Failed to fetch hub navigation');
     return c.json({ success: false, error: { code: 'FETCH_FAILED', message: 'Failed to fetch navigation' } }, 500);
