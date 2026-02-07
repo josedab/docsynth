@@ -12,6 +12,7 @@ import { startPRPreviewWorker } from './workers/pr-preview.js';
 import { startDriftScanWorker, schedulePeriodicDriftScans } from './workers/drift-scan.js';
 import { startVectorIndexWorker } from './workers/vector-index.js';
 import { startDocTestWorker } from './workers/doc-test.js';
+import { startDocTestingWorker } from './workers/doc-testing.js';
 import { startHealthScanWorker, schedulePeriodicHealthScans } from './workers/health-scan.js';
 import { startExampleValidationWorker } from './workers/example-validation.js';
 import { startKnowledgeGraphWorker } from './workers/knowledge-graph.js';
@@ -20,6 +21,7 @@ import { startDocReviewCopilotWorker } from './workers/doc-review-copilot.js';
 import { startTranslationWorker } from './workers/translation.js';
 import { startDiagramGenerationWorker } from './workers/diagram-generation.js';
 import { startOnboardingWorker } from './workers/onboarding.js';
+import { startOnboardingPathsWorker } from './workers/onboarding-paths.js';
 import { startChatRAGWorker } from './workers/chat-rag.js';
 import { startADRGenerationWorker } from './workers/adr-generation.js';
 import { startBotMessageWorker } from './workers/bot-message.js';
@@ -27,6 +29,17 @@ import { startBotMessageWorker } from './workers/bot-message.js';
 import { startReviewDocumentationWorker } from './workers/review-documentation.js';
 import { startCoverageGateWorker } from './workers/coverage-gate.js';
 import { startComplianceAssessmentWorker } from './workers/compliance-assessment.js';
+// Follow-up feature workers
+import { startSelfHealingWorker, schedulePeriodicSelfHealing } from './workers/self-healing.js';
+import { startAnalyticsComputationWorker, scheduleDailyAnalytics } from './workers/analytics-computation.js';
+import { startLLMUsageAggregationWorker, scheduleHourlyLLMUsageAggregation } from './workers/llm-usage-aggregation.js';
+import { startCommunityBadgeCheckWorker } from './workers/community-badge-check.js';
+import { startMigrationWorker } from './workers/migration.js';
+import { startDocImpactWorker, scheduleUnanalyzedPRs } from './workers/doc-impact.js';
+import { startPollingWorker, schedulePeriodicPolling } from './workers/polling.js';
+import { startNLEditorWorker } from './workers/nl-editor.js';
+import { startOrgGraphBuilderWorker } from './workers/org-graph-builder.js';
+import { startROIComputationWorker, scheduleWeeklyROIComputation } from './workers/roi-computation.js';
 
 const log = createLogger('worker');
 
@@ -39,6 +52,9 @@ const DRIFT_SCAN_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 /** Interval for periodic health scans (24 hours in milliseconds) */
 const HEALTH_SCAN_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+/** Interval for periodic polling checks (5 minutes in milliseconds) */
+const POLLING_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 
 const workers: { close: () => Promise<void> }[] = [];
 
@@ -73,6 +89,7 @@ async function start() {
     workers.push(startDriftScanWorker());
     workers.push(startVectorIndexWorker());
     workers.push(startDocTestWorker());
+    workers.push(startDocTestingWorker());
     workers.push(startHealthScanWorker());
     workers.push(startExampleValidationWorker());
     workers.push(startKnowledgeGraphWorker());
@@ -81,6 +98,7 @@ async function start() {
     workers.push(startTranslationWorker());
     workers.push(startDiagramGenerationWorker());
     workers.push(startOnboardingWorker());
+    workers.push(startOnboardingPathsWorker());
     workers.push(startChatRAGWorker());
     workers.push(startADRGenerationWorker());
     workers.push(startBotMessageWorker());
@@ -88,6 +106,17 @@ async function start() {
     workers.push(startReviewDocumentationWorker());
     workers.push(startCoverageGateWorker());
     workers.push(startComplianceAssessmentWorker());
+    // Follow-up feature workers
+    workers.push(startSelfHealingWorker());
+    workers.push(startAnalyticsComputationWorker());
+    workers.push(startLLMUsageAggregationWorker());
+    workers.push(startCommunityBadgeCheckWorker());
+    workers.push(startMigrationWorker());
+    workers.push(startDocImpactWorker());
+    workers.push(startPollingWorker());
+    workers.push(startOrgGraphBuilderWorker());
+    workers.push(startNLEditorWorker());
+    workers.push(startROIComputationWorker());
 
     // Schedule periodic drift scans (runs daily)
     await schedulePeriodicDriftScans();
@@ -96,6 +125,30 @@ async function start() {
     // Schedule periodic health scans (runs daily at different time)
     await schedulePeriodicHealthScans();
     setInterval(() => schedulePeriodicHealthScans(), HEALTH_SCAN_INTERVAL_MS);
+
+    // Schedule periodic self-healing runs (runs daily)
+    await schedulePeriodicSelfHealing();
+    setInterval(() => schedulePeriodicSelfHealing(), DRIFT_SCAN_INTERVAL_MS);
+
+    // Schedule daily analytics computation
+    await scheduleDailyAnalytics();
+    setInterval(() => scheduleDailyAnalytics(), DRIFT_SCAN_INTERVAL_MS);
+
+    // Schedule hourly LLM usage aggregation
+    await scheduleHourlyLLMUsageAggregation();
+    setInterval(() => scheduleHourlyLLMUsageAggregation(), 60 * 60 * 1000); // Every hour
+
+    // Schedule doc impact analysis for unanalyzed PRs (runs daily)
+    await scheduleUnanalyzedPRs();
+    setInterval(() => scheduleUnanalyzedPRs(), DRIFT_SCAN_INTERVAL_MS);
+
+    // Schedule periodic polling (checks every 5 minutes for repos that need polling)
+    await schedulePeriodicPolling();
+    setInterval(() => schedulePeriodicPolling(), POLLING_CHECK_INTERVAL_MS);
+
+    // Schedule weekly ROI computation
+    await scheduleWeeklyROIComputation();
+    setInterval(() => scheduleWeeklyROIComputation(), 7 * DRIFT_SCAN_INTERVAL_MS); // Weekly
 
     log.info('🚀 DocSynth workers running');
   } catch (error) {

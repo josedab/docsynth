@@ -37,6 +37,7 @@ import { knowledgeGraphRoutes } from './knowledge-graph.js';
 import { docTestRoutes } from './doc-tests.js';
 import { interactiveExamplesRoutes } from './interactive-examples.js';
 import docValidationRoutes from './doc-testing.js';
+import { docTestingV2Routes } from './doc-testing-v2.js';
 
 // Advanced documentation features
 import { docReviewCopilotRoutes } from './doc-review-copilot.js';
@@ -65,16 +66,30 @@ import executableDocsRoutes from './executable-docs.js';
 import reviewWorkflowRoutes from './review-workflow.js';
 import multiAgentDocRoutes from './multi-agent-doc.js';
 import onboardingPathsRoutes from './onboarding-paths.js';
+import { onboardingPathsV2Routes } from './onboarding-paths-v2.js';
 import interactivePlaygroundRoutes from './interactive-playground.js';
 
 // Next-gen features (from planning)
 import { reviewDocumentationRoutes } from './review-documentation.js';
 import { coverageGateRoutes } from './coverage-gate.js';
+import { aiDocEditorRoutes } from './ai-doc-editor.js';
+import { llmUsageRoutes } from './llm-usage.js';
+import { docImpactRoutes } from './doc-impact.js';
+import { migrationRoutes } from './migration.js';
+import { multiRepoGraphRoutes } from './multi-repo-graph.js';
+import { roiAnalyticsRoutes } from './roi-analytics.js';
+import { nlEditorRoutes } from './nl-editor.js';
 
 // Community features
 import { hubRoutes } from './hub.js';
 import { communityRoutes } from './community.js';
 import { playgroundRoutes } from './playground.js';
+
+// Polling feature
+import { pollingRoutes } from './polling.js';
+
+// SCM Provider Support
+import { scmProviderRoutes } from './scm-providers.js';
 
 // ============================================================================
 // Route Configuration
@@ -105,6 +120,7 @@ const repositoryRoutes: RouteConfig[] = [
   { path: '/api/repositories', router: repoRoutes, description: 'Repository management' },
   { path: '/api/documents', router: documentRoutes, description: 'Document management' },
   { path: '/api/jobs', router: jobRoutes, description: 'Background jobs' },
+  { path: '/api/scm-providers', router: scmProviderRoutes, description: 'SCM provider management (GitHub, GitLab, Bitbucket)' },
 ];
 
 /**
@@ -124,6 +140,8 @@ const analyticsFeatureRoutes: RouteConfig[] = [
   { path: '/api/doc-analytics', router: docAnalyticsRoutes, description: 'Documentation analytics' },
   { path: '/api/health-dashboard', router: healthDashboardRoutes, description: 'Health dashboard' },
   { path: '/api/coverage', router: coverageRoutes, description: 'Documentation coverage' },
+  { path: '/api/llm-usage', router: llmUsageRoutes, description: 'LLM usage and cost monitoring' },
+  { path: '/api/roi-analytics', router: roiAnalyticsRoutes, description: 'ROI analytics and dashboard' },
 ];
 
 /**
@@ -138,6 +156,7 @@ const documentationRoutes: RouteConfig[] = [
   { path: '/api/doc-tests', router: docTestRoutes, description: 'Documentation tests' },
   { path: '/api/examples', router: interactiveExamplesRoutes, description: 'Interactive examples' },
   { path: '/api/doc-validation', router: docValidationRoutes, description: 'Documentation validation' },
+  { path: '/api/doc-testing-v2', router: docTestingV2Routes, description: 'AI Documentation Testing (code execution)' },
 ];
 
 /**
@@ -176,9 +195,16 @@ const nextGenRoutes: RouteConfig[] = [
   { path: '/api/review-workflow', router: reviewWorkflowRoutes, description: 'Collaborative review workflows' },
   { path: '/api/multi-agent', router: multiAgentDocRoutes, description: 'Multi-agent documentation generation' },
   { path: '/api/onboarding-paths', router: onboardingPathsRoutes, description: 'Personalized onboarding paths' },
+  { path: '/api/onboarding-paths-v2', router: onboardingPathsV2Routes, description: 'Personalized onboarding paths V2 (role-specific)' },
   { path: '/api/interactive-playground', router: interactivePlaygroundRoutes, description: 'Interactive code playgrounds' },
   { path: '/api/review-documentation', router: reviewDocumentationRoutes, description: 'AI code review documentation' },
   { path: '/api/coverage-gate', router: coverageGateRoutes, description: 'Documentation coverage CI/CD gate' },
+  { path: '/api/ai-editor', router: aiDocEditorRoutes, description: 'AI-powered documentation editor' },
+  { path: '/api/nl-editor', router: nlEditorRoutes, description: 'Natural language documentation editing' },
+  { path: '/api/doc-impact', router: docImpactRoutes, description: 'PR documentation impact analysis' },
+  { path: '/api/migration', router: migrationRoutes, description: 'Smart migration engine for importing docs' },
+  { path: '/api/polling', router: pollingRoutes, description: 'Webhook-less change detection via polling' },
+  { path: '/api/multi-repo-graph', router: multiRepoGraphRoutes, description: 'Multi-repository documentation graph' },
 ];
 
 /**

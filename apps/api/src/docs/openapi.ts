@@ -26,6 +26,15 @@ DocSynth is an AI-powered documentation generator that automatically creates and
 - **Compliance & Security Module** - Generate SOC2, GDPR, HIPAA documentation
 - **Health Score & Gamification** - Track documentation health with badges and leaderboards
 - **Self-Healing Documentation** - Automatically fix broken links and outdated references
+- **Smart Migration Engine** - Import documentation from Confluence, Notion, GitBook, and markdown repos
+- **Webhook-less Polling** - Alternative to webhooks via scheduled GitHub API polling
+- **Doc Impact Analysis** - Analyze which docs become stale when PRs are merged
+- **AI Documentation Testing** - Extract and execute code examples from docs with CI integration
+- **Personalized Onboarding Paths** - Role-specific developer onboarding with progressive learning
+- **Multi-Repository Documentation Graph** - Unified knowledge graph across all org repositories
+- **Multi-SCM Support** - GitLab and Bitbucket support alongside GitHub
+- **Natural Language Doc Editing** - Modify documentation through natural language commands
+- **Documentation Analytics & ROI Dashboard** - Track documentation usage, productivity gains, and return on investment
 
 ## Authentication
 
@@ -78,6 +87,22 @@ DocSynth integrates with GitHub webhooks to automatically trigger documentation 
     { name: 'Self-Healing', description: 'Automatic documentation fixing' },
     { name: 'Doc Tests', description: 'Documentation testing and validation' },
     { name: 'Chat', description: 'AI-powered documentation chat' },
+    { name: 'LLM Usage', description: 'LLM token usage, costs, and observability' },
+    { name: 'Interactive Playground', description: 'Interactive code playgrounds with AI hints' },
+    { name: 'AI Doc Editor', description: 'AI-powered documentation editing suggestions' },
+    { name: 'Community', description: 'Community features, discussions, and badges' },
+    { name: 'Hub', description: 'Documentation hub and navigation' },
+    { name: 'Review Documentation', description: 'AI code review documentation' },
+    { name: 'Coverage Gate', description: 'Documentation coverage CI/CD gate' },
+    { name: 'Polling', description: 'Webhook-less change detection via polling' },
+    { name: 'Doc Impact', description: 'PR documentation impact analysis' },
+    { name: 'Migration', description: 'Smart migration engine for importing docs' },
+    { name: 'Doc Testing V2', description: 'AI documentation testing with code execution' },
+    { name: 'Onboarding Paths', description: 'Personalized developer onboarding paths' },
+    { name: 'Multi-Repo Graph', description: 'Multi-repository documentation graph' },
+    { name: 'SCM Providers', description: 'Multi-SCM provider support (GitHub, GitLab, Bitbucket)' },
+    { name: 'NL Editor', description: 'Natural language documentation editing' },
+    { name: 'ROI Analytics', description: 'Documentation analytics and ROI dashboard' },
   ],
   paths: {
     // Health
@@ -1029,6 +1054,720 @@ DocSynth integrates with GitHub webhooks to automatically trigger documentation 
         },
       },
     },
+
+    // LLM Usage
+    '/api/llm-usage/overview': {
+      get: {
+        tags: ['LLM Usage'],
+        summary: 'Get LLM usage overview',
+        description: 'Get organization-wide LLM token usage, costs, and statistics',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'startDate', in: 'query', schema: { type: 'string', format: 'date' } },
+          { name: 'endDate', in: 'query', schema: { type: 'string', format: 'date' } },
+        ],
+        responses: {
+          '200': {
+            description: 'LLM usage statistics',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/LLMUsageStats' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/llm-usage/trend': {
+      get: {
+        tags: ['LLM Usage'],
+        summary: 'Get usage trend',
+        description: 'Get LLM usage trend over time',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'startDate', in: 'query', schema: { type: 'string', format: 'date' } },
+          { name: 'endDate', in: 'query', schema: { type: 'string', format: 'date' } },
+          { name: 'granularity', in: 'query', schema: { type: 'string', enum: ['hourly', 'daily', 'weekly'] } },
+        ],
+        responses: {
+          '200': {
+            description: 'Usage trend data',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        trend: { type: 'array', items: { $ref: '#/components/schemas/UsageTrend' } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/llm-usage/cost-breakdown': {
+      get: {
+        tags: ['LLM Usage'],
+        summary: 'Get cost breakdown',
+        description: 'Get LLM cost breakdown by provider, feature, and model',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'startDate', in: 'query', schema: { type: 'string', format: 'date' } },
+          { name: 'endDate', in: 'query', schema: { type: 'string', format: 'date' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Cost breakdown',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/CostBreakdown' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/llm-usage/alerts': {
+      get: {
+        tags: ['LLM Usage'],
+        summary: 'Get usage alerts',
+        description: 'Get alerts and recommendations for LLM usage',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Alerts and recommendations',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        alerts: { type: 'array', items: { $ref: '#/components/schemas/LLMUsageAlert' } },
+                        recommendations: { type: 'array', items: { type: 'string' } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    // Interactive Playground
+    '/api/interactive-playground': {
+      post: {
+        tags: ['Interactive Playground'],
+        summary: 'Create playground',
+        description: 'Create a new interactive code playground',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['repositoryId', 'language'],
+                properties: {
+                  repositoryId: { type: 'string' },
+                  documentId: { type: 'string' },
+                  language: { type: 'string', enum: ['javascript', 'typescript', 'python', 'go', 'rust', 'html'] },
+                  framework: { type: 'string', enum: ['react', 'vue', 'svelte', 'node', 'express', 'fastapi', 'none'] },
+                  initialCode: { type: 'string' },
+                  dependencies: { type: 'object', additionalProperties: { type: 'string' } },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Playground created',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/Playground' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/interactive-playground/{playgroundId}/execute': {
+      post: {
+        tags: ['Interactive Playground'],
+        summary: 'Execute code',
+        description: 'Execute code in the playground sandbox',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'playgroundId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['code'],
+                properties: {
+                  code: { type: 'string' },
+                  timeout: { type: 'integer', default: 30000 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Execution result',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/ExecutionResult' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/interactive-playground/{playgroundId}/hint': {
+      post: {
+        tags: ['Interactive Playground'],
+        summary: 'Get AI hint',
+        description: 'Get an AI-powered hint for the current code (rate limited)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'playgroundId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['code'],
+                properties: {
+                  code: { type: 'string' },
+                  errorMessage: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'AI hint',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        hint: { type: 'string' },
+                        confidence: { type: 'number' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    // AI Doc Editor
+    '/api/ai-editor/completion': {
+      post: {
+        tags: ['AI Doc Editor'],
+        summary: 'Get inline completion',
+        description: 'Get AI-powered inline completion suggestion at cursor position',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/EditorContext' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Inline suggestion',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/InlineSuggestion' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/ai-editor/improve': {
+      post: {
+        tags: ['AI Doc Editor'],
+        summary: 'Get improvement suggestions',
+        description: 'Get AI improvement suggestions for selected text',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/EditorContext' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Improvement suggestions',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { type: 'array', items: { $ref: '#/components/schemas/AISuggestion' } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/ai-editor/style-check': {
+      post: {
+        tags: ['AI Doc Editor'],
+        summary: 'Check style consistency',
+        description: 'Analyze document for style consistency and suggest fixes',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['repositoryId', 'content'],
+                properties: {
+                  repositoryId: { type: 'string' },
+                  content: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Style fixes',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { type: 'array', items: { $ref: '#/components/schemas/StyleFix' } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    // Community
+    '/api/community/discussions': {
+      get: {
+        tags: ['Community'],
+        summary: 'List discussions',
+        description: 'Get community discussions for a repository',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'repositoryId', in: 'query', required: true, schema: { type: 'string' } },
+          { name: 'category', in: 'query', schema: { type: 'string' } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['open', 'closed', 'resolved'] } },
+        ],
+        responses: {
+          '200': {
+            description: 'List of discussions',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { type: 'array', items: { $ref: '#/components/schemas/CommunityDiscussion' } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      post: {
+        tags: ['Community'],
+        summary: 'Create discussion',
+        description: 'Start a new community discussion',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['repositoryId', 'title', 'content'],
+                properties: {
+                  repositoryId: { type: 'string' },
+                  title: { type: 'string' },
+                  content: { type: 'string' },
+                  category: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Discussion created',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/CommunityDiscussion' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/community/badges': {
+      get: {
+        tags: ['Community'],
+        summary: 'List available badges',
+        description: 'Get all available community badges',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'List of badges',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { type: 'array', items: { $ref: '#/components/schemas/CommunityBadge' } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/community/contributors/{contributorId}/profile': {
+      get: {
+        tags: ['Community'],
+        summary: 'Get contributor profile',
+        description: 'Get a contributor profile with stats and badges',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'contributorId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Contributor profile',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/ContributorProfile' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    // Hub
+    '/api/hub/{hubId}/navigation': {
+      get: {
+        tags: ['Hub'],
+        summary: 'Get hub navigation',
+        description: 'Get the navigation structure for a documentation hub',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'hubId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Hub navigation structure',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/HubNavigation' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/hub/{hubId}/search': {
+      get: {
+        tags: ['Hub'],
+        summary: 'Search hub',
+        description: 'Search documentation across the hub',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'hubId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'q', in: 'query', required: true, schema: { type: 'string' } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+        ],
+        responses: {
+          '200': {
+            description: 'Search results',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        results: { type: 'array', items: { $ref: '#/components/schemas/SearchResult' } },
+                        total: { type: 'integer' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    // Coverage Gate
+    '/api/coverage-gate/status/{repositoryId}': {
+      get: {
+        tags: ['Coverage Gate'],
+        summary: 'Get coverage status',
+        description: 'Get documentation coverage status for a repository',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'repositoryId', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Coverage status',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/CoverageStatus' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/coverage-gate/check': {
+      post: {
+        tags: ['Coverage Gate'],
+        summary: 'Check coverage gate',
+        description: 'Check if a PR passes the documentation coverage gate',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['repositoryId', 'prNumber'],
+                properties: {
+                  repositoryId: { type: 'string' },
+                  prNumber: { type: 'integer' },
+                  sha: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Gate check result',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/GateCheckResult' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/coverage-gate/config': {
+      get: {
+        tags: ['Coverage Gate'],
+        summary: 'Get gate config',
+        description: 'Get the coverage gate configuration for a repository',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'repositoryId', in: 'query', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Gate configuration',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/GateConfig' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      put: {
+        tags: ['Coverage Gate'],
+        summary: 'Update gate config',
+        description: 'Update the coverage gate configuration',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/GateConfig' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Configuration updated',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    // Review Documentation
+    '/api/review-documentation/generate': {
+      post: {
+        tags: ['Review Documentation'],
+        summary: 'Generate review docs',
+        description: 'Generate documentation from code review insights',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['repositoryId', 'prNumber'],
+                properties: {
+                  repositoryId: { type: 'string' },
+                  prNumber: { type: 'integer' },
+                  includeComments: { type: 'boolean', default: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Generated documentation',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: { $ref: '#/components/schemas/ReviewDocumentation' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -1315,6 +2054,319 @@ DocSynth integrates with GitHub webhooks to automatically trigger documentation 
       CIProvider: {
         type: 'string',
         enum: ['github-actions', 'gitlab-ci', 'circleci', 'jenkins'],
+      },
+
+      // LLM Usage schemas
+      LLMUsageStats: {
+        type: 'object',
+        properties: {
+          totalRequests: { type: 'integer' },
+          successfulRequests: { type: 'integer' },
+          failedRequests: { type: 'integer' },
+          totalInputTokens: { type: 'integer' },
+          totalOutputTokens: { type: 'integer' },
+          totalTokens: { type: 'integer' },
+          totalCost: { type: 'number', description: 'Total cost in cents' },
+          avgLatencyMs: { type: 'number' },
+          byProvider: { type: 'object', additionalProperties: { $ref: '#/components/schemas/UsageBreakdown' } },
+          byFeature: { type: 'object', additionalProperties: { $ref: '#/components/schemas/UsageBreakdown' } },
+          byModel: { type: 'object', additionalProperties: { $ref: '#/components/schemas/UsageBreakdown' } },
+        },
+      },
+      UsageBreakdown: {
+        type: 'object',
+        properties: {
+          requests: { type: 'integer' },
+          tokens: { type: 'integer' },
+          cost: { type: 'number' },
+        },
+      },
+      UsageTrend: {
+        type: 'object',
+        properties: {
+          date: { type: 'string' },
+          requests: { type: 'integer' },
+          tokens: { type: 'integer' },
+          cost: { type: 'number' },
+        },
+      },
+      CostBreakdown: {
+        type: 'object',
+        properties: {
+          totalCost: { type: 'number' },
+          totalRequests: { type: 'integer' },
+          totalTokens: { type: 'integer' },
+          successRate: { type: 'number' },
+          avgLatencyMs: { type: 'number' },
+          byProvider: { type: 'array', items: { $ref: '#/components/schemas/CostBreakdownEntry' } },
+          byFeature: { type: 'array', items: { $ref: '#/components/schemas/CostBreakdownEntry' } },
+          byModel: { type: 'array', items: { $ref: '#/components/schemas/CostBreakdownEntry' } },
+        },
+      },
+      CostBreakdownEntry: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          cost: { type: 'number' },
+          percentage: { type: 'number' },
+          requests: { type: 'integer' },
+          tokens: { type: 'integer' },
+        },
+      },
+      LLMUsageAlert: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['warning', 'info', 'error'] },
+          title: { type: 'string' },
+          message: { type: 'string' },
+        },
+      },
+
+      // Interactive Playground schemas
+      Playground: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          repositoryId: { type: 'string' },
+          documentId: { type: 'string', nullable: true },
+          language: { type: 'string' },
+          framework: { type: 'string', nullable: true },
+          initialCode: { type: 'string' },
+          dependencies: { type: 'object', additionalProperties: { type: 'string' } },
+          sessionToken: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      ExecutionResult: {
+        type: 'object',
+        properties: {
+          output: { type: 'string' },
+          error: { type: 'string', nullable: true },
+          exitCode: { type: 'integer' },
+          durationMs: { type: 'integer' },
+          memoryUsed: { type: 'integer' },
+        },
+      },
+
+      // AI Doc Editor schemas
+      EditorContext: {
+        type: 'object',
+        required: ['repositoryId', 'content', 'cursorPosition'],
+        properties: {
+          documentId: { type: 'string' },
+          repositoryId: { type: 'string' },
+          filePath: { type: 'string' },
+          content: { type: 'string' },
+          cursorPosition: { $ref: '#/components/schemas/Position' },
+          selection: { $ref: '#/components/schemas/Selection' },
+          language: { type: 'string' },
+        },
+      },
+      Position: {
+        type: 'object',
+        properties: {
+          line: { type: 'integer' },
+          character: { type: 'integer' },
+        },
+      },
+      Selection: {
+        type: 'object',
+        properties: {
+          start: { $ref: '#/components/schemas/Position' },
+          end: { $ref: '#/components/schemas/Position' },
+        },
+      },
+      InlineSuggestion: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          suggestionText: { type: 'string' },
+          displayText: { type: 'string' },
+          position: { $ref: '#/components/schemas/Position' },
+          type: { type: 'string', enum: ['ghost', 'inline', 'tooltip'] },
+        },
+      },
+      AISuggestion: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          text: { type: 'string' },
+          position: { $ref: '#/components/schemas/Position' },
+          endPosition: { $ref: '#/components/schemas/Position' },
+          type: { type: 'string', enum: ['insert', 'replace', 'delete'] },
+          category: { type: 'string', enum: ['completion', 'improvement', 'style', 'grammar', 'clarity'] },
+          confidence: { type: 'number' },
+          reason: { type: 'string' },
+        },
+      },
+      StyleFix: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          originalText: { type: 'string' },
+          suggestedText: { type: 'string' },
+          lineStart: { type: 'integer' },
+          lineEnd: { type: 'integer' },
+          category: { type: 'string', enum: ['consistency', 'formatting', 'terminology', 'tone'] },
+          explanation: { type: 'string' },
+        },
+      },
+
+      // Community schemas
+      CommunityDiscussion: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          repositoryId: { type: 'string' },
+          authorId: { type: 'string' },
+          title: { type: 'string' },
+          content: { type: 'string' },
+          category: { type: 'string' },
+          status: { type: 'string', enum: ['open', 'closed', 'resolved'] },
+          upvotes: { type: 'integer' },
+          replyCount: { type: 'integer' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      CommunityBadge: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          icon: { type: 'string' },
+          category: { type: 'string' },
+          tier: { type: 'string', enum: ['bronze', 'silver', 'gold', 'platinum'] },
+          criteria: { type: 'object' },
+        },
+      },
+      ContributorProfile: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          userId: { type: 'string' },
+          displayName: { type: 'string' },
+          avatarUrl: { type: 'string' },
+          bio: { type: 'string' },
+          contributionCount: { type: 'integer' },
+          docPagesCreated: { type: 'integer' },
+          docPagesEdited: { type: 'integer' },
+          reviewsGiven: { type: 'integer' },
+          helpfulVotes: { type: 'integer' },
+          badges: { type: 'array', items: { $ref: '#/components/schemas/CommunityBadge' } },
+          rank: { type: 'integer' },
+          joinedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+
+      // Hub schemas
+      HubNavigation: {
+        type: 'object',
+        properties: {
+          hubId: { type: 'string' },
+          title: { type: 'string' },
+          sections: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                title: { type: 'string' },
+                items: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      title: { type: 'string' },
+                      path: { type: 'string' },
+                      type: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      SearchResult: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string' },
+          path: { type: 'string' },
+          snippet: { type: 'string' },
+          score: { type: 'number' },
+          documentType: { type: 'string' },
+        },
+      },
+
+      // Coverage Gate schemas
+      CoverageStatus: {
+        type: 'object',
+        properties: {
+          repositoryId: { type: 'string' },
+          overallCoverage: { type: 'number' },
+          functionsCovered: { type: 'integer' },
+          functionsTotal: { type: 'integer' },
+          classesCovered: { type: 'integer' },
+          classesTotal: { type: 'integer' },
+          modulesCovered: { type: 'integer' },
+          modulesTotal: { type: 'integer' },
+          passesGate: { type: 'boolean' },
+          threshold: { type: 'number' },
+          lastChecked: { type: 'string', format: 'date-time' },
+        },
+      },
+      GateCheckResult: {
+        type: 'object',
+        properties: {
+          passed: { type: 'boolean' },
+          coverage: { type: 'number' },
+          threshold: { type: 'number' },
+          delta: { type: 'number' },
+          newUndocumented: { type: 'array', items: { type: 'string' } },
+          message: { type: 'string' },
+        },
+      },
+      GateConfig: {
+        type: 'object',
+        properties: {
+          repositoryId: { type: 'string' },
+          enabled: { type: 'boolean' },
+          threshold: { type: 'number' },
+          failOnDecrease: { type: 'boolean' },
+          excludePaths: { type: 'array', items: { type: 'string' } },
+          requireForMerge: { type: 'boolean' },
+        },
+      },
+
+      // Review Documentation schemas
+      ReviewDocumentation: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          repositoryId: { type: 'string' },
+          prNumber: { type: 'integer' },
+          title: { type: 'string' },
+          summary: { type: 'string' },
+          keyChanges: { type: 'array', items: { type: 'string' } },
+          codeSnippets: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                file: { type: 'string' },
+                language: { type: 'string' },
+                code: { type: 'string' },
+                explanation: { type: 'string' },
+              },
+            },
+          },
+          reviewInsights: { type: 'array', items: { type: 'string' } },
+          generatedAt: { type: 'string', format: 'date-time' },
+        },
       },
     },
   },
