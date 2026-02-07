@@ -456,4 +456,464 @@ app.post('/scripts/:scriptId/render', requireAuth, requireOrgAccess, async (c) =
   }, 202);
 });
 
+// ============================================================================
+// Thumbnail Generation
+// ============================================================================
+
+// Generate thumbnail for a video
+app.post('/scripts/:scriptId/thumbnail', requireAuth, requireOrgAccess, rateLimit('ai'), async (c) => {
+  const scriptId = c.req.param('scriptId');
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    style?: 'minimal' | 'detailed' | 'branded';
+    includeTitle?: boolean;
+    colorScheme?: string;
+  }>();
+
+  const script = await db.videoScript.findFirst({
+    where: { id: scriptId, organizationId: orgId },
+  });
+
+  if (!script) {
+    throw new NotFoundError('VideoScript', scriptId);
+  }
+
+  const anthropic = getAnthropicClient();
+  if (!anthropic) {
+    throw new Error('Anthropic client not available');
+  }
+
+  // Generate thumbnail design prompt
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 500,
+    messages: [
+      {
+        role: 'user',
+        content: `Create a thumbnail design specification for a developer documentation video.
+
+Video Title: ${script.title}
+Description: ${script.description}
+Keywords: ${(script.keywords as string[]).join(', ')}
+Style: ${body.style ?? 'minimal'}
+
+Generate a JSON object with:
+{
+  "headline": "Short eye-catching headline (max 5 words)",
+  "subheadline": "Optional supporting text",
+  "iconSuggestion": "Emoji or icon name that represents the topic",
+  "colors": {
+    "background": "#hex",
+    "primary": "#hex",
+    "text": "#hex"
+  },
+  "layoutType": "centered|split|featured-code",
+  "codeSnippet": "Short code snippet to feature (if applicable, max 3 lines)"
+}
+
+Return ONLY valid JSON.`,
+      },
+    ],
+  });
+
+  const content = response.content[0]?.type === 'text' ? response.content[0].text : '{}';
+
+  let thumbnailSpec: object;
+  try {
+    thumbnailSpec = JSON.parse(content);
+  } catch {
+    thumbnailSpec = {
+      headline: script.title,
+      iconSuggestion: '📚',
+      colors: { background: '#1a1a2e', primary: '#4a9eff', text: '#ffffff' },
+      layoutType: 'centered',
+    };
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      scriptId,
+      specification: thumbnailSpec,
+      dimensions: { width: 1280, height: 720 },
+    },
+  });
+});
+
+// ============================================================================
+// Chapter Markers
+// ============================================================================
+
+// Generate chapter markers for a video
+app.post('/scripts/:scriptId/chapters', requireAuth, requireOrgAccess, async (c) => {
+  const scriptId = c.req.param('scriptId');
+  const orgId = c.get('organizationId');
+
+  const script = await db.videoScript.findFirst({
+    where: { id: scriptId, organizationId: orgId },
+  });
+
+  if (!script) {
+    throw new NotFoundError('VideoScript', scriptId);
+  }
+
+  const scenes = script.scenes as VideoScene[];
+  let cumulativeTime = 0;
+
+  const chapters = scenes.map((scene) => {
+    const startTime = cumulativeTime;
+    cumulativeTime += scene.duration;
+
+    return {
+      id: scene.id,
+      title: scene.title,
+      startTime,
+      startTimeFormatted: formatTimestamp(startTime),
+      duration: scene.duration,
+      type: scene.type,
+    };
+  });
+
+  // Generate YouTube-compatible chapter description
+  const youtubeChapters = chapters
+    .map((ch) => `${ch.startTimeFormatted} ${ch.title}`)
+    .join('\n');
+
+  return c.json({
+    success: true,
+    data: {
+      scriptId,
+      chapters,
+      youtubeFormat: youtubeChapters,
+      totalDuration: cumulativeTime,
+    },
+  });
+});
+
+// ============================================================================
+// Video Series Management
+// ============================================================================
+
+// Create a video series
+app.post('/series', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    title: string;
+    description?: string;
+    repositoryId?: string;
+  }>();
+
+  if (!body.title) {
+    throw new ValidationError('title is required');
+  }
+
+  const seriesId = generateId('vseries');
+
+  await db.videoSeries.create({
+    data: {
+      id: seriesId,
+      organizationId: orgId,
+      repositoryId: body.repositoryId,
+      title: body.title,
+      description: body.description,
+      order: [],
+      status: 'draft',
+    },
+  });
+
+  return c.json({
+    success: true,
+    data: { id: seriesId, title: body.title },
+  }, 201);
+});
+
+// Add script to series
+app.post('/series/:seriesId/scripts/:scriptId', requireAuth, requireOrgAccess, async (c) => {
+  const seriesId = c.req.param('seriesId');
+  const scriptId = c.req.param('scriptId');
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{ position?: number }>();
+
+  const series = await db.videoSeries.findFirst({
+    where: { id: seriesId, organizationId: orgId },
+  });
+
+  if (!series) {
+    throw new NotFoundError('VideoSeries', seriesId);
+  }
+
+  const script = await db.videoScript.findFirst({
+    where: { id: scriptId, organizationId: orgId },
+  });
+
+  if (!script) {
+    throw new NotFoundError('VideoScript', scriptId);
+  }
+
+  const order = (series.order as string[]) || [];
+  if (order.includes(scriptId)) {
+    return c.json({ success: true, message: 'Script already in series' });
+  }
+
+  if (body.position !== undefined && body.position >= 0 && body.position < order.length) {
+    order.splice(body.position, 0, scriptId);
+  } else {
+    order.push(scriptId);
+  }
+
+  await db.videoSeries.update({
+    where: { id: seriesId },
+    data: { order },
+  });
+
+  return c.json({
+    success: true,
+    data: { seriesId, scriptId, position: order.indexOf(scriptId) },
+  });
+});
+
+// Get video series with scripts
+app.get('/series/:seriesId', requireAuth, requireOrgAccess, async (c) => {
+  const seriesId = c.req.param('seriesId');
+  const orgId = c.get('organizationId');
+
+  const series = await db.videoSeries.findFirst({
+    where: { id: seriesId, organizationId: orgId },
+  });
+
+  if (!series) {
+    throw new NotFoundError('VideoSeries', seriesId);
+  }
+
+  const order = (series.order as string[]) || [];
+
+  const scripts = order.length > 0
+    ? await db.videoScript.findMany({
+        where: { id: { in: order }, organizationId: orgId },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          duration: true,
+          status: true,
+        },
+      })
+    : [];
+
+  // Sort scripts by order
+  const orderedScripts = order
+    .map((id) => scripts.find((s: { id: string }) => s.id === id))
+    .filter(Boolean);
+
+  return c.json({
+    success: true,
+    data: {
+      ...series,
+      scripts: orderedScripts,
+      totalDuration: orderedScripts.reduce((sum: number, s: { duration?: number }) => sum + (s?.duration || 0), 0),
+    },
+  });
+});
+
+// List video series
+app.get('/series', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const limit = parseInt(c.req.query('limit') || '20', 10);
+
+  const seriesList = await db.videoSeries.findMany({
+    where: { organizationId: orgId },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      order: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+
+  const seriesWithCounts = seriesList.map((s: { id: string; order: string[] | null }) => ({
+    ...s,
+    scriptCount: Array.isArray(s.order) ? s.order.length : 0,
+  }));
+
+  return c.json({
+    success: true,
+    data: seriesWithCounts,
+  });
+});
+
+// ============================================================================
+// Transcript Export
+// ============================================================================
+
+// Export transcript in various formats
+app.get('/scripts/:scriptId/transcript', requireAuth, requireOrgAccess, async (c) => {
+  const scriptId = c.req.param('scriptId');
+  const orgId = c.get('organizationId');
+  const format = c.req.query('format') || 'text';
+
+  const script = await db.videoScript.findFirst({
+    where: { id: scriptId, organizationId: orgId },
+  });
+
+  if (!script) {
+    throw new NotFoundError('VideoScript', scriptId);
+  }
+
+  const scenes = script.scenes as VideoScene[];
+
+  switch (format) {
+    case 'json': {
+      return c.json({
+        success: true,
+        data: {
+          title: script.title,
+          segments: scenes.map((scene) => ({
+            title: scene.title,
+            type: scene.type,
+            text: scene.narration,
+            duration: scene.duration,
+          })),
+        },
+      });
+    }
+
+    case 'srt': {
+      let srt = '';
+      let cumulativeTime = 0;
+      let index = 1;
+
+      for (const scene of scenes) {
+        // Split into chunks of ~10 words
+        const words = scene.narration.split(/\s+/);
+        const chunks: string[] = [];
+        let chunk: string[] = [];
+
+        for (const word of words) {
+          chunk.push(word);
+          if (chunk.length >= 10) {
+            chunks.push(chunk.join(' '));
+            chunk = [];
+          }
+        }
+        if (chunk.length > 0) chunks.push(chunk.join(' '));
+
+        const chunkDuration = scene.duration / Math.max(chunks.length, 1);
+
+        for (const text of chunks) {
+          const start = formatSRT(cumulativeTime);
+          const end = formatSRT(cumulativeTime + chunkDuration);
+          srt += `${index}\n${start} --> ${end}\n${text}\n\n`;
+          cumulativeTime += chunkDuration;
+          index++;
+        }
+      }
+
+      return c.text(srt, 200, {
+        'Content-Type': 'text/plain',
+        'Content-Disposition': `attachment; filename="${script.title.replace(/\s+/g, '_')}.srt"`,
+      });
+    }
+
+    case 'vtt': {
+      let vtt = 'WEBVTT\n\n';
+      let cumulativeTime = 0;
+
+      for (const scene of scenes) {
+        const words = scene.narration.split(/\s+/);
+        const chunks: string[] = [];
+        let chunk: string[] = [];
+
+        for (const word of words) {
+          chunk.push(word);
+          if (chunk.length >= 10) {
+            chunks.push(chunk.join(' '));
+            chunk = [];
+          }
+        }
+        if (chunk.length > 0) chunks.push(chunk.join(' '));
+
+        const chunkDuration = scene.duration / Math.max(chunks.length, 1);
+
+        for (const text of chunks) {
+          const start = formatVTT(cumulativeTime);
+          const end = formatVTT(cumulativeTime + chunkDuration);
+          vtt += `${start} --> ${end}\n${text}\n\n`;
+          cumulativeTime += chunkDuration;
+        }
+      }
+
+      return c.text(vtt, 200, {
+        'Content-Type': 'text/vtt',
+        'Content-Disposition': `attachment; filename="${script.title.replace(/\s+/g, '_')}.vtt"`,
+      });
+    }
+
+    default: {
+      // Plain text transcript
+      const transcript = scenes
+        .map((scene) => `## ${scene.title}\n\n${scene.narration}`)
+        .join('\n\n---\n\n');
+
+      return c.text(`# ${script.title}\n\n${transcript}`, 200, {
+        'Content-Type': 'text/plain',
+        'Content-Disposition': `attachment; filename="${script.title.replace(/\s+/g, '_')}_transcript.txt"`,
+      });
+    }
+  }
+});
+
+// ============================================================================
+// Video Analytics
+// ============================================================================
+
+// Track video view/engagement
+app.post('/scripts/:scriptId/analytics', async (c) => {
+  const scriptId = c.req.param('scriptId');
+  const body = await c.req.json<{
+    event: 'view' | 'play' | 'pause' | 'complete' | 'chapter_skip';
+    timestamp?: number;
+    metadata?: Record<string, unknown>;
+  }>();
+
+  // In production, store in analytics table
+  log.info({ scriptId, event: body.event, timestamp: body.timestamp }, 'Video analytics event');
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function formatTimestamp(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function formatSRT(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const ms = Math.round((seconds % 1) * 1000);
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
+}
+
+function formatVTT(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const ms = Math.round((seconds % 1) * 1000);
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+}
+
 export { app as videoDocRoutes };

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { prisma } from '@docsynth/database';
 import { requireAuth, requireOrgAccess } from '../middleware/auth.js';
 import { DocumentType } from '@docsynth/types';
+import { cacheService, CACHE_KEYS, CACHE_TTLS } from '../services/cache.service.js';
 
 const app = new Hono();
 
@@ -12,6 +13,13 @@ app.get('/overview', requireAuth, requireOrgAccess, async (c) => {
 
   const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const end = endDate ? new Date(endDate) : new Date();
+
+  // Try to get from cache first
+  const cacheKey = `${CACHE_KEYS.ANALYTICS_SUMMARY}:org:${orgId}:${start.toISOString().split('T')[0]}:${end.toISOString().split('T')[0]}`;
+  const cached = await cacheService.get<{ success: boolean; data: unknown }>(cacheKey);
+  if (cached) {
+    return c.json(cached);
+  }
 
   // Get repository IDs for the organization first
   const orgRepos = await prisma.repository.findMany({
@@ -44,7 +52,7 @@ app.get('/overview', requireAuth, requireOrgAccess, async (c) => {
   const successfulJobs = jobs.filter((j) => j.status === 'COMPLETED').length;
   const failedJobs = jobs.filter((j) => j.status === 'FAILED').length;
 
-  return c.json({
+  const response = {
     success: true,
     data: {
       period: { start, end },
@@ -70,7 +78,15 @@ app.get('/overview', requireAuth, requireOrgAccess, async (c) => {
         ),
       },
     },
+  };
+
+  // Cache the response
+  await cacheService.set(cacheKey, response, {
+    ttl: CACHE_TTLS.MEDIUM,
+    tags: [`org:${orgId}`, 'analytics'],
   });
+
+  return c.json(response);
 });
 
 // Get documentation coverage metrics
@@ -922,6 +938,457 @@ app.get('/engagement', requireAuth, requireOrgAccess, async (c) => {
         exampleCoverage: metrics.docs > 0 ? Math.round((metrics.hasCodeExamples / metrics.docs) * 100) : 0,
       })).sort((a, b) => b.documents - a.documents),
     },
+  });
+});
+
+// ============================================================================
+// Documentation Velocity Analytics (Feature 6 Enhancement)
+// ============================================================================
+
+// Get documentation velocity metrics
+app.get('/velocity', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const { days } = c.req.query();
+
+  const periodDays = days ? parseInt(days, 10) : 30;
+  const start = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+  const previousPeriodStart = new Date(start.getTime() - periodDays * 24 * 60 * 60 * 1000);
+
+  const orgRepos = await prisma.repository.findMany({
+    where: { organizationId: orgId },
+    select: { id: true },
+  });
+  const repoIds = orgRepos.map((r) => r.id);
+
+  // Get documents created/updated in current period
+  const currentPeriodDocs = await prisma.document.findMany({
+    where: {
+      repositoryId: { in: repoIds },
+      updatedAt: { gte: start },
+    },
+    select: { id: true, updatedAt: true, createdAt: true, content: true },
+  });
+
+  // Get documents from previous period for comparison
+  const previousPeriodDocs = await prisma.document.findMany({
+    where: {
+      repositoryId: { in: repoIds },
+      updatedAt: { gte: previousPeriodStart, lt: start },
+    },
+    select: { id: true, updatedAt: true, content: true },
+  });
+
+  // Calculate velocity metrics
+  const currentUpdates = currentPeriodDocs.length;
+  const previousUpdates = previousPeriodDocs.length;
+  const velocityChange = previousUpdates > 0
+    ? Math.round(((currentUpdates - previousUpdates) / previousUpdates) * 100)
+    : currentUpdates > 0 ? 100 : 0;
+
+  // Calculate words added in current period
+  const currentWords = currentPeriodDocs.reduce((sum, doc) => {
+    return sum + doc.content.split(/\s+/).filter(w => w.length > 0).length;
+  }, 0);
+
+  const previousWords = previousPeriodDocs.reduce((sum, doc) => {
+    return sum + doc.content.split(/\s+/).filter(w => w.length > 0).length;
+  }, 0);
+
+  // Daily velocity breakdown
+  const dailyVelocity: Record<string, { updates: number; wordsAdded: number }> = {};
+  for (const doc of currentPeriodDocs) {
+    const dateKey = doc.updatedAt.toISOString().split('T')[0] ?? '';
+    if (!dailyVelocity[dateKey]) {
+      dailyVelocity[dateKey] = { updates: 0, wordsAdded: 0 };
+    }
+    dailyVelocity[dateKey].updates++;
+    dailyVelocity[dateKey].wordsAdded += doc.content.split(/\s+/).filter(w => w.length > 0).length;
+  }
+
+  // Calculate average daily velocity
+  const avgDailyUpdates = periodDays > 0 ? Math.round((currentUpdates / periodDays) * 10) / 10 : 0;
+  const avgDailyWords = periodDays > 0 ? Math.round(currentWords / periodDays) : 0;
+
+  return c.json({
+    success: true,
+    data: {
+      period: { days: periodDays, start: start.toISOString() },
+      velocity: {
+        currentPeriod: {
+          documentsUpdated: currentUpdates,
+          wordsAdded: currentWords,
+        },
+        previousPeriod: {
+          documentsUpdated: previousUpdates,
+          wordsAdded: previousWords,
+        },
+        change: {
+          documentsPercent: velocityChange,
+          wordsPercent: previousWords > 0
+            ? Math.round(((currentWords - previousWords) / previousWords) * 100)
+            : currentWords > 0 ? 100 : 0,
+        },
+        averageDaily: {
+          updates: avgDailyUpdates,
+          words: avgDailyWords,
+        },
+      },
+      dailyBreakdown: Object.entries(dailyVelocity)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, data]) => ({ date, ...data })),
+    },
+  });
+});
+
+// ============================================================================
+// Content Gap Analysis
+// ============================================================================
+
+// Identify gaps in documentation coverage
+app.get('/gaps', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const { repositoryId } = c.req.query();
+
+  const whereClause = repositoryId
+    ? { id: repositoryId, organizationId: orgId }
+    : { organizationId: orgId };
+
+  const repositories = await prisma.repository.findMany({
+    where: whereClause,
+    include: {
+      documents: {
+        select: { type: true, path: true, content: true, title: true },
+      },
+    },
+  });
+
+  const gaps: Array<{
+    repositoryId: string;
+    repositoryName: string;
+    gapType: string;
+    description: string;
+    severity: 'high' | 'medium' | 'low';
+    recommendation: string;
+  }> = [];
+
+  const expectedDocTypes: DocumentType[] = ['README', 'API_REFERENCE', 'CHANGELOG', 'ARCHITECTURE'];
+
+  for (const repo of repositories) {
+    const docTypes = new Set(repo.documents.map((d) => d.type));
+    const docPaths = repo.documents.map((d) => d.path.toLowerCase());
+
+    // Check for missing document types
+    for (const expectedType of expectedDocTypes) {
+      if (!docTypes.has(expectedType)) {
+        gaps.push({
+          repositoryId: repo.id,
+          repositoryName: repo.name,
+          gapType: 'missing_doc_type',
+          description: `Missing ${expectedType} documentation`,
+          severity: expectedType === 'README' ? 'high' : 'medium',
+          recommendation: `Create a ${expectedType.toLowerCase().replace('_', ' ')} document`,
+        });
+      }
+    }
+
+    // Check for missing common documentation patterns
+    const commonDocs = [
+      { pattern: 'contributing', name: 'Contributing Guide', severity: 'low' as const },
+      { pattern: 'install', name: 'Installation Guide', severity: 'medium' as const },
+      { pattern: 'quickstart', name: 'Quick Start Guide', severity: 'medium' as const },
+      { pattern: 'faq', name: 'FAQ', severity: 'low' as const },
+    ];
+
+    for (const commonDoc of commonDocs) {
+      const hasDoc = docPaths.some((p) => p.includes(commonDoc.pattern));
+      if (!hasDoc && repo.documents.length > 3) {
+        gaps.push({
+          repositoryId: repo.id,
+          repositoryName: repo.name,
+          gapType: 'missing_common_doc',
+          description: `Missing ${commonDoc.name}`,
+          severity: commonDoc.severity,
+          recommendation: `Consider adding a ${commonDoc.name.toLowerCase()} to help users`,
+        });
+      }
+    }
+
+    // Check for thin documentation
+    for (const doc of repo.documents) {
+      const wordCount = doc.content.split(/\s+/).filter((w) => w.length > 0).length;
+      if (wordCount < 100 && doc.type !== 'CHANGELOG') {
+        gaps.push({
+          repositoryId: repo.id,
+          repositoryName: repo.name,
+          gapType: 'thin_content',
+          description: `${doc.path} has very limited content (${wordCount} words)`,
+          severity: doc.type === 'README' ? 'high' : 'low',
+          recommendation: `Expand the documentation in ${doc.path}`,
+        });
+      }
+    }
+
+    // Check for missing code examples in API docs
+    const apiDocs = repo.documents.filter((d) => d.type === 'API_REFERENCE');
+    for (const doc of apiDocs) {
+      if (!doc.content.includes('```')) {
+        gaps.push({
+          repositoryId: repo.id,
+          repositoryName: repo.name,
+          gapType: 'missing_examples',
+          description: `API documentation "${doc.title || doc.path}" lacks code examples`,
+          severity: 'medium',
+          recommendation: 'Add code examples to demonstrate API usage',
+        });
+      }
+    }
+  }
+
+  // Group by severity
+  const bySeverity = {
+    high: gaps.filter((g) => g.severity === 'high').length,
+    medium: gaps.filter((g) => g.severity === 'medium').length,
+    low: gaps.filter((g) => g.severity === 'low').length,
+  };
+
+  return c.json({
+    success: true,
+    data: {
+      totalGaps: gaps.length,
+      bySeverity,
+      gaps: gaps.sort((a, b) => {
+        const severityOrder = { high: 0, medium: 1, low: 2 };
+        return severityOrder[a.severity] - severityOrder[b.severity];
+      }),
+    },
+  });
+});
+
+// ============================================================================
+// AI-Powered Insights
+// ============================================================================
+
+// Get AI-generated insights about documentation
+app.get('/insights', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+
+  const orgRepos = await prisma.repository.findMany({
+    where: { organizationId: orgId },
+    select: { id: true, name: true, enabled: true },
+  });
+  const repoIds = orgRepos.map((r) => r.id);
+
+  // Gather key metrics
+  const [documents, recentJobs] = await Promise.all([
+    prisma.document.findMany({
+      where: { repositoryId: { in: repoIds } },
+      select: { id: true, type: true, updatedAt: true, content: true, repositoryId: true },
+    }),
+    prisma.generationJob.findMany({
+      where: {
+        repositoryId: { in: repoIds },
+        createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+      },
+      select: { status: true },
+    }),
+  ]);
+
+  const now = new Date();
+  const insights: Array<{
+    type: 'improvement' | 'warning' | 'success' | 'suggestion';
+    title: string;
+    description: string;
+    metric?: string;
+    action?: string;
+  }> = [];
+
+  // Analyze document freshness
+  const staleDocs = documents.filter((d) => {
+    const daysSinceUpdate = Math.floor((now.getTime() - d.updatedAt.getTime()) / (24 * 60 * 60 * 1000));
+    return daysSinceUpdate > 30;
+  });
+
+  if (staleDocs.length > documents.length * 0.3) {
+    insights.push({
+      type: 'warning',
+      title: 'Documentation may be drifting',
+      description: `${Math.round((staleDocs.length / documents.length) * 100)}% of your documentation hasn't been updated in over 30 days`,
+      metric: `${staleDocs.length} / ${documents.length} documents`,
+      action: 'Review and update stale documentation',
+    });
+  }
+
+  // Analyze code examples coverage
+  const docsWithExamples = documents.filter((d) => d.content.includes('```'));
+  const examplesCoverage = documents.length > 0
+    ? Math.round((docsWithExamples.length / documents.length) * 100)
+    : 0;
+
+  if (examplesCoverage < 50) {
+    insights.push({
+      type: 'improvement',
+      title: 'Add more code examples',
+      description: 'Code examples help developers understand your API faster',
+      metric: `${examplesCoverage}% coverage`,
+      action: 'Add code examples to documentation lacking them',
+    });
+  } else if (examplesCoverage >= 80) {
+    insights.push({
+      type: 'success',
+      title: 'Great code example coverage',
+      description: 'Most of your documentation includes code examples',
+      metric: `${examplesCoverage}% coverage`,
+    });
+  }
+
+  // Analyze generation success rate
+  const successfulJobs = recentJobs.filter((j) => j.status === 'COMPLETED');
+  const successRate = recentJobs.length > 0
+    ? Math.round((successfulJobs.length / recentJobs.length) * 100)
+    : 0;
+
+  if (successRate < 80 && recentJobs.length > 5) {
+    insights.push({
+      type: 'warning',
+      title: 'Generation success rate is low',
+      description: 'Some documentation generation jobs are failing',
+      metric: `${successRate}% success rate`,
+      action: 'Check failed jobs for common issues',
+    });
+  } else if (successRate >= 95 && recentJobs.length > 10) {
+    insights.push({
+      type: 'success',
+      title: 'Excellent generation reliability',
+      description: 'Documentation generation is working smoothly',
+      metric: `${successRate}% success rate`,
+    });
+  }
+
+  // Suggest enabling more repositories
+  const disabledRepos = orgRepos.filter((r) => !r.enabled);
+  if (disabledRepos.length > 0 && orgRepos.length > 1) {
+    insights.push({
+      type: 'suggestion',
+      title: 'Enable more repositories',
+      description: `${disabledRepos.length} repositories are not using DocSynth yet`,
+      action: 'Enable DocSynth for all your repositories',
+    });
+  }
+
+  // Check documentation balance
+  const docsByType: Record<string, number> = {};
+  for (const doc of documents) {
+    docsByType[doc.type] = (docsByType[doc.type] || 0) + 1;
+  }
+
+  if ((docsByType['README'] || 0) === 0 && documents.length > 0) {
+    insights.push({
+      type: 'warning',
+      title: 'Missing README files',
+      description: 'READMEs are essential for repository discoverability',
+      action: 'Add README files to your repositories',
+    });
+  }
+
+  // Calculate overall health score
+  const freshnessScore = documents.length > 0
+    ? Math.round(((documents.length - staleDocs.length) / documents.length) * 100)
+    : 0;
+  const overallHealth = Math.round((freshnessScore + examplesCoverage + successRate) / 3);
+
+  return c.json({
+    success: true,
+    data: {
+      overallHealthScore: overallHealth,
+      metrics: {
+        freshnessScore,
+        examplesCoverage,
+        generationSuccessRate: successRate,
+        totalDocuments: documents.length,
+        totalRepositories: orgRepos.length,
+      },
+      insights,
+      generatedAt: new Date().toISOString(),
+    },
+  });
+});
+
+// ============================================================================
+// Export Analytics Report
+// ============================================================================
+
+// Generate exportable analytics report
+app.get('/export', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const { format, days } = c.req.query();
+
+  const periodDays = days ? parseInt(days, 10) : 30;
+  const start = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+  const orgRepos = await prisma.repository.findMany({
+    where: { organizationId: orgId },
+    select: { id: true, name: true, enabled: true },
+  });
+  const repoIds = orgRepos.map((r) => r.id);
+
+  const [documents, jobs] = await Promise.all([
+    prisma.document.findMany({
+      where: { repositoryId: { in: repoIds } },
+      select: { id: true, path: true, type: true, updatedAt: true, repositoryId: true },
+    }),
+    prisma.generationJob.findMany({
+      where: {
+        repositoryId: { in: repoIds },
+        createdAt: { gte: start },
+      },
+      select: { id: true, status: true, createdAt: true },
+    }),
+  ]);
+
+  const repoMap = new Map(orgRepos.map((r) => [r.id, r.name]));
+
+  const reportData = {
+    generatedAt: new Date().toISOString(),
+    period: { days: periodDays, start: start.toISOString(), end: new Date().toISOString() },
+    summary: {
+      totalRepositories: orgRepos.length,
+      enabledRepositories: orgRepos.filter((r) => r.enabled).length,
+      totalDocuments: documents.length,
+      totalGenerations: jobs.length,
+      successfulGenerations: jobs.filter((j) => j.status === 'COMPLETED').length,
+    },
+    repositories: orgRepos.map((repo) => ({
+      name: repo.name,
+      enabled: repo.enabled,
+      documentCount: documents.filter((d) => d.repositoryId === repo.id).length,
+      generationCount: jobs.length, // Simplified
+    })),
+    documents: documents.map((doc) => ({
+      path: doc.path,
+      type: doc.type,
+      repository: repoMap.get(doc.repositoryId) || 'Unknown',
+      lastUpdated: doc.updatedAt.toISOString(),
+    })),
+  };
+
+  if (format === 'csv') {
+    // Generate CSV format
+    const csvLines = [
+      'Document Path,Type,Repository,Last Updated',
+      ...reportData.documents.map(
+        (d) => `"${d.path}","${d.type}","${d.repository}","${d.lastUpdated}"`
+      ),
+    ];
+
+    return c.text(csvLines.join('\n'), 200, {
+      'Content-Type': 'text/csv',
+      'Content-Disposition': `attachment; filename="docsynth-analytics-${new Date().toISOString().split('T')[0]}.csv"`,
+    });
+  }
+
+  return c.json({
+    success: true,
+    data: reportData,
   });
 });
 
