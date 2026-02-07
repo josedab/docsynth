@@ -309,4 +309,168 @@ app.get('/repositories/:repositoryId/badge', async (c) => {
   });
 });
 
+/**
+ * Generate GitHub Actions workflow for coverage gate
+ */
+app.get('/repositories/:repositoryId/workflow', requireAuth, requireOrgAccess, async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+
+  const repository = await prisma.repository.findUnique({
+    where: { id: repositoryId },
+    select: { name: true },
+  });
+
+  if (!repository) {
+    return c.json({ success: false, error: 'Repository not found' }, 404);
+  }
+
+  const config = await db.coverageGateConfig.findUnique({
+    where: { repositoryId },
+  });
+
+  const workflow = `# DocSynth Documentation Coverage Gate
+# Auto-generated workflow for ${repository.name}
+
+name: DocSynth Coverage Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, master]
+
+jobs:
+  coverage-check:
+    name: Documentation Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run DocSynth Coverage Check
+        uses: docsynth/coverage-action@v1
+        with:
+          docsynth-token: \${{ secrets.DOCSYNTH_TOKEN }}
+          min-coverage: ${config?.minCoveragePercent ?? 70}
+          fail-on-decrease: ${config?.failOnDecrease ?? true}
+          max-decrease-percent: ${config?.maxDecreasePercent ?? 5}
+
+      - name: Comment PR with coverage report
+        if: github.event_name == 'pull_request'
+        uses: docsynth/coverage-comment-action@v1
+        with:
+          docsynth-token: \${{ secrets.DOCSYNTH_TOKEN }}
+          github-token: \${{ secrets.GITHUB_TOKEN }}
+`;
+
+  return c.body(workflow, 200, {
+    'Content-Type': 'text/yaml',
+    'Content-Disposition': 'attachment; filename="docsynth-coverage.yml"',
+  });
+});
+
+/**
+ * Get undocumented exports that are blocking merge
+ */
+app.get('/repositories/:repositoryId/blocking', requireAuth, requireOrgAccess, async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+  const branch = c.req.query('branch') || 'main';
+
+  // Get latest failed report
+  const report = await db.coverageReport.findFirst({
+    where: { repositoryId, branch, passed: false },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!report) {
+    return c.json({
+      success: true,
+      data: {
+        blocking: false,
+        message: 'No blocking issues',
+      },
+    });
+  }
+
+  const undocumented = (report.undocumented as Array<{ name: string; type: string; file: string; suggestion?: string }>) || [];
+
+  return c.json({
+    success: true,
+    data: {
+      blocking: true,
+      coveragePercent: report.coveragePercent,
+      threshold: report.threshold,
+      blockingExports: undocumented.slice(0, 20),
+      totalUndocumented: undocumented.length,
+      suggestions: undocumented.filter((e) => e.suggestion).slice(0, 5),
+    },
+  });
+});
+
+/**
+ * Get coverage comparison between two commits/branches
+ */
+app.get('/repositories/:repositoryId/compare', requireAuth, requireOrgAccess, async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+  const base = c.req.query('base') || 'main';
+  const head = c.req.query('head');
+
+  if (!head) {
+    return c.json({ success: false, error: 'head parameter is required' }, 400);
+  }
+
+  const baseReport = await db.coverageReport.findFirst({
+    where: { repositoryId, branch: base },
+    orderBy: { createdAt: 'desc' },
+    select: { coveragePercent: true, totalExports: true, documentedCount: true },
+  });
+
+  const headReport = await db.coverageReport.findFirst({
+    where: { repositoryId, branch: head },
+    orderBy: { createdAt: 'desc' },
+    select: { coveragePercent: true, totalExports: true, documentedCount: true, undocumented: true },
+  });
+
+  if (!baseReport || !headReport) {
+    return c.json({
+      success: true,
+      data: {
+        available: false,
+        message: 'Coverage data not available for comparison',
+      },
+    });
+  }
+
+  const coverageChange = headReport.coveragePercent - baseReport.coveragePercent;
+  const newExports = headReport.totalExports - baseReport.totalExports;
+  const newDocumented = headReport.documentedCount - baseReport.documentedCount;
+
+  return c.json({
+    success: true,
+    data: {
+      available: true,
+      base: {
+        branch: base,
+        coverage: baseReport.coveragePercent,
+        total: baseReport.totalExports,
+        documented: baseReport.documentedCount,
+      },
+      head: {
+        branch: head,
+        coverage: headReport.coveragePercent,
+        total: headReport.totalExports,
+        documented: headReport.documentedCount,
+      },
+      comparison: {
+        coverageChange,
+        newExports,
+        newDocumented,
+        improved: coverageChange >= 0,
+        newUndocumented: (headReport.undocumented as unknown[])?.slice(0, 10) || [],
+      },
+    },
+  });
+});
+
 export { app as coverageGateRoutes };

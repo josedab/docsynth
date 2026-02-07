@@ -539,3 +539,200 @@ For each export, provide a one-line suggestion for what documentation should inc
 }
 
 export const coverageGateService = new CoverageGateService();
+
+// ============================================================================
+// GitHub Actions Integration
+// ============================================================================
+
+/**
+ * Generate a GitHub Actions workflow file for coverage gate
+ */
+export function generateGitHubActionsWorkflow(repoName: string, config: {
+  minCoveragePercent: number;
+  failOnDecrease: boolean;
+  maxDecreasePercent: number;
+  blockMerge: boolean;
+}): string {
+  return `# DocSynth Documentation Coverage Gate
+# Auto-generated workflow for ${repoName}
+
+name: DocSynth Coverage Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, master]
+
+jobs:
+  coverage-check:
+    name: Documentation Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run DocSynth Coverage Check
+        uses: docsynth/coverage-action@v1
+        with:
+          docsynth-token: \${{ secrets.DOCSYNTH_TOKEN }}
+          min-coverage: ${config.minCoveragePercent}
+          fail-on-decrease: ${config.failOnDecrease}
+          max-decrease-percent: ${config.maxDecreasePercent}
+          ${config.blockMerge ? 'block-merge: true' : '# block-merge: false'}
+
+      - name: Comment PR with coverage report
+        if: github.event_name == 'pull_request'
+        uses: docsynth/coverage-comment-action@v1
+        with:
+          docsynth-token: \${{ secrets.DOCSYNTH_TOKEN }}
+          github-token: \${{ secrets.GITHUB_TOKEN }}
+`;
+}
+
+/**
+ * Block a PR from being merged due to coverage failure
+ */
+export async function blockPRMerge(
+  installationId: number,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  reason: string
+): Promise<void> {
+  const octokit = createInstallationOctokit(installationId);
+  if (!octokit) {
+    throw new Error('Failed to get GitHub client');
+  }
+
+  // Add a PR comment explaining why merge is blocked
+  await octokit.issues.createComment({
+    owner,
+    repo,
+    issue_number: prNumber,
+    body: `## ⛔ Documentation Coverage Gate Failed
+
+${reason}
+
+### What to do:
+1. Add documentation (JSDoc comments or README entries) for undocumented exports
+2. Push your changes to re-run the coverage check
+3. Ensure coverage meets the minimum threshold before merging
+
+<sub>🤖 This is an automated message from DocSynth</sub>`,
+  });
+
+  // Request changes on the PR
+  try {
+    await octokit.pulls.createReview({
+      owner,
+      repo,
+      pull_number: prNumber,
+      event: 'REQUEST_CHANGES',
+      body: 'Documentation coverage is below the required threshold. Please add documentation for the undocumented exports listed in the Check Run details.',
+    });
+  } catch {
+    // May fail if there are no files to review
+    log.debug({ prNumber }, 'Could not create review (no files)');
+  }
+}
+
+/**
+ * Approve PR merge when coverage passes
+ */
+export async function approvePRMerge(
+  installationId: number,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  coveragePercent: number
+): Promise<void> {
+  const octokit = createInstallationOctokit(installationId);
+  if (!octokit) {
+    throw new Error('Failed to get GitHub client');
+  }
+
+  // Add approval comment
+  await octokit.issues.createComment({
+    owner,
+    repo,
+    issue_number: prNumber,
+    body: `## ✅ Documentation Coverage Gate Passed
+
+Coverage: **${coveragePercent}%**
+
+Your code meets the documentation requirements. Great job keeping docs up to date!
+
+<sub>🤖 This is an automated message from DocSynth</sub>`,
+  });
+}
+
+/**
+ * Add coverage badge to README
+ */
+export async function addCoverageBadgeToReadme(
+  installationId: number,
+  owner: string,
+  repo: string,
+  branch: string,
+  repositoryId: string
+): Promise<boolean> {
+  const octokit = createInstallationOctokit(installationId);
+  if (!octokit) {
+    return false;
+  }
+
+  try {
+    // Get current README
+    const { data: readme } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: 'README.md',
+      ref: branch,
+    });
+
+    if (!('content' in readme)) {
+      return false;
+    }
+
+    const content = Buffer.from(readme.content, 'base64').toString('utf-8');
+    const badgeUrl = `https://docsynth.io/api/coverage-gate/repositories/${repositoryId}/badge`;
+    const badgeMarkdown = `[![Docs Coverage](${badgeUrl})](https://docsynth.io/repositories/${repositoryId}/coverage)`;
+
+    // Check if badge already exists
+    if (content.includes('docsynth.io/api/coverage-gate')) {
+      return true; // Already has badge
+    }
+
+    // Add badge after first heading
+    const lines = content.split('\n');
+    let insertIndex = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i]?.startsWith('#')) {
+        insertIndex = i + 1;
+        break;
+      }
+    }
+
+    lines.splice(insertIndex, 0, '', badgeMarkdown, '');
+    const newContent = lines.join('\n');
+
+    // Create or update file
+    await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: 'README.md',
+      message: 'docs: add DocSynth coverage badge',
+      content: Buffer.from(newContent).toString('base64'),
+      sha: readme.sha,
+      branch,
+    });
+
+    return true;
+  } catch (error) {
+    log.warn({ error }, 'Failed to add coverage badge');
+    return false;
+  }
+}
