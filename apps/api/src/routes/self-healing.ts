@@ -10,8 +10,13 @@ import {
   generateSimpleDiff,
   mapAlertTypeToIssueType,
   isAutoFixable,
+  analyzeDocumentForRegeneration,
+  regenerateSection,
+  applyRegeneratedSections,
+  runProactiveSelfHealing,
   type DocumentIssue,
   type HealingResult,
+  type AutoRegenerationConfig,
 } from '../services/self-healing.js';
 
 const app = new Hono();
@@ -580,6 +585,223 @@ app.post('/detect/code-sync', requireAuth, requireOrgAccess, rateLimit('ai'), as
         highRisk: mismatches.filter(m => m.risk === 'high').length,
       },
     },
+  });
+});
+
+// ============================================================================
+// Auto-Regeneration (Self-Healing v2)
+// ============================================================================
+
+// Analyze document for sections needing regeneration
+app.post('/analyze-regeneration/:documentId', requireAuth, requireOrgAccess, rateLimit('ai'), async (c) => {
+  const documentId = c.req.param('documentId');
+  const orgId = c.get('organizationId');
+
+  const document = await prisma.document.findFirst({
+    where: { id: documentId },
+    include: {
+      repository: {
+        select: { id: true, organizationId: true },
+      },
+    },
+  });
+
+  if (!document || document.repository.organizationId !== orgId) {
+    throw new NotFoundError('Document', documentId);
+  }
+
+  const analysis = await analyzeDocumentForRegeneration(documentId, document.repositoryId);
+
+  return c.json({
+    success: true,
+    data: {
+      documentId,
+      documentPath: document.path,
+      ...analysis,
+      sectionsNeedingUpdate: analysis.sections.filter(s => s.needsUpdate).length,
+    },
+  });
+});
+
+// Regenerate a specific section
+app.post('/regenerate-section', requireAuth, requireOrgAccess, rateLimit('ai'), async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    documentId: string;
+    heading: string;
+    context?: { relatedCode?: string; prContext?: string };
+  }>();
+
+  if (!body.documentId || !body.heading) {
+    throw new ValidationError('documentId and heading are required');
+  }
+
+  const document = await prisma.document.findFirst({
+    where: { id: body.documentId },
+    include: {
+      repository: {
+        select: { organizationId: true },
+      },
+    },
+  });
+
+  if (!document || document.repository.organizationId !== orgId) {
+    throw new NotFoundError('Document', body.documentId);
+  }
+
+  const result = await regenerateSection(body.documentId, body.heading, body.context || {});
+
+  if (!result) {
+    return c.json({ success: false, error: 'Section not found or could not be regenerated' }, 400);
+  }
+
+  return c.json({
+    success: true,
+    data: result,
+  });
+});
+
+// Apply regenerated sections
+app.post('/apply-regeneration', requireAuth, requireOrgAccess, async (c) => {
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<{
+    documentId: string;
+    sections: Array<{
+      heading: string;
+      originalContent: string;
+      newContent: string;
+      confidence: number;
+      reason: string;
+    }>;
+  }>();
+
+  if (!body.documentId || !body.sections?.length) {
+    throw new ValidationError('documentId and sections are required');
+  }
+
+  const document = await prisma.document.findFirst({
+    where: { id: body.documentId },
+    include: {
+      repository: {
+        select: { organizationId: true },
+      },
+    },
+  });
+
+  if (!document || document.repository.organizationId !== orgId) {
+    throw new NotFoundError('Document', body.documentId);
+  }
+
+  const result = await applyRegeneratedSections(body.documentId, body.sections);
+
+  return c.json({
+    success: true,
+    data: {
+      success: result.success,
+      appliedSections: body.sections.length,
+    },
+  });
+});
+
+// Run proactive self-healing for a repository
+app.post('/proactive/:repositoryId', requireAuth, requireOrgAccess, rateLimit('ai'), async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+  const orgId = c.get('organizationId');
+  const body: Partial<AutoRegenerationConfig> = await c.req.json<Partial<AutoRegenerationConfig>>().catch(() => ({}));
+
+  const repo = await prisma.repository.findFirst({
+    where: { id: repositoryId, organizationId: orgId },
+  });
+  if (!repo) throw new NotFoundError('Repository', repositoryId);
+
+  const config: AutoRegenerationConfig = {
+    enabled: body.enabled ?? true,
+    confidenceThreshold: body.confidenceThreshold ?? 0.8,
+    requireReview: body.requireReview ?? true,
+    maxSectionsPerRun: body.maxSectionsPerRun ?? 5,
+    excludePatterns: body.excludePatterns ?? ['CHANGELOG', 'LICENSE'],
+  };
+
+  const results = await runProactiveSelfHealing(repositoryId, config);
+
+  return c.json({
+    success: true,
+    data: {
+      repositoryId,
+      results,
+      summary: {
+        documentsProcessed: results.length,
+        sectionsRegenerated: results.reduce((sum, r) => sum + r.sections.length, 0),
+        successful: results.filter(r => r.status === 'success').length,
+        pendingReview: results.filter(r => r.status === 'partial').length,
+        failed: results.filter(r => r.status === 'failed').length,
+      },
+    },
+  });
+});
+
+// Get self-healing configuration
+app.get('/config/:repositoryId', requireAuth, requireOrgAccess, async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+  const orgId = c.get('organizationId');
+
+  const repo = await prisma.repository.findFirst({
+    where: { id: repositoryId, organizationId: orgId },
+    select: { id: true, config: true },
+  });
+  if (!repo) throw new NotFoundError('Repository', repositoryId);
+
+  const repoConfig = repo.config as Record<string, unknown> || {};
+  const selfHealingConfig = (repoConfig.selfHealing as AutoRegenerationConfig) || {
+    enabled: false,
+    confidenceThreshold: 0.8,
+    requireReview: true,
+    maxSectionsPerRun: 5,
+    excludePatterns: ['CHANGELOG', 'LICENSE'],
+  };
+
+  return c.json({
+    success: true,
+    data: selfHealingConfig,
+  });
+});
+
+// Update self-healing configuration
+app.put('/config/:repositoryId', requireAuth, requireOrgAccess, async (c) => {
+  const repositoryId = c.req.param('repositoryId');
+  const orgId = c.get('organizationId');
+  const body = await c.req.json<Partial<AutoRegenerationConfig>>();
+
+  const repo = await prisma.repository.findFirst({
+    where: { id: repositoryId, organizationId: orgId },
+    select: { id: true, config: true },
+  });
+  if (!repo) throw new NotFoundError('Repository', repositoryId);
+
+  const currentConfig = repo.config as Record<string, unknown> || {};
+  const currentSelfHealing = (currentConfig.selfHealing as AutoRegenerationConfig) || {};
+
+  const updatedSelfHealing: AutoRegenerationConfig = {
+    enabled: body.enabled ?? currentSelfHealing.enabled ?? false,
+    confidenceThreshold: body.confidenceThreshold ?? currentSelfHealing.confidenceThreshold ?? 0.8,
+    requireReview: body.requireReview ?? currentSelfHealing.requireReview ?? true,
+    maxSectionsPerRun: body.maxSectionsPerRun ?? currentSelfHealing.maxSectionsPerRun ?? 5,
+    excludePatterns: body.excludePatterns ?? currentSelfHealing.excludePatterns ?? [],
+  };
+
+  await prisma.repository.update({
+    where: { id: repositoryId },
+    data: {
+      config: JSON.parse(JSON.stringify({
+        ...currentConfig,
+        selfHealing: updatedSelfHealing,
+      })),
+    },
+  });
+
+  return c.json({
+    success: true,
+    data: updatedSelfHealing,
   });
 });
 
