@@ -8,8 +8,9 @@
 import { createWorker, QUEUE_NAMES, type OnboardingPathJobData } from '@docsynth/queue';
 import { prisma } from '@docsynth/database';
 import { createLogger, createLLMClient, generateId } from '@docsynth/utils';
-import { getOctokit } from '@docsynth/github';
-import type { DeveloperRole } from '../../../api/src/services/onboarding-paths.service.js';
+import { createInstallationOctokit } from '@docsynth/github';
+
+type DeveloperRole = 'frontend' | 'backend' | 'fullstack' | 'data' | 'devops' | 'mobile' | 'qa';
 
 const log = createLogger('onboarding-paths-worker');
 
@@ -55,11 +56,14 @@ export function startOnboardingPathsWorker() {
       try {
         switch (action) {
           case 'generate':
-            return await generateOnboardingPath(job, repositoryId, targetRole);
+            await generateOnboardingPath(job, repositoryId, targetRole);
+            return;
           case 'update':
-            return await updateOnboardingPath(job, pathId);
+            await updateOnboardingPath(job, pathId);
+            return;
           case 'personalize':
-            return await personalizeOnboardingPath(job, repositoryId, userId);
+            await personalizeOnboardingPath(job, repositoryId, userId);
+            return;
           default:
             throw new Error(`Unknown action: ${action}`);
         }
@@ -88,7 +92,7 @@ async function generateOnboardingPath(
   // Get repository info
   const repository = await prisma.repository.findUnique({
     where: { id: repositoryId },
-    select: { name: true, owner: true, installationId: true },
+    select: { name: true, installationId: true },
   });
 
   if (!repository) {
@@ -103,7 +107,7 @@ async function generateOnboardingPath(
   await job.updateProgress(20);
 
   // Analyze codebase
-  const octokit = getOctokit(repository.installationId);
+  const octokit = createInstallationOctokit(repository.installationId);
   const analysis = await analyzeCodebase(octokit, owner, repo);
 
   await job.updateProgress(40);
@@ -138,8 +142,8 @@ async function generateOnboardingPath(
       title: `${capitalizeRole(role)} Developer Onboarding`,
       description: `Comprehensive ${role} onboarding path with ${modules.length} progressive modules`,
       estimatedHours: Math.ceil(totalMinutes / 60),
-      modules: modules as unknown as Record<string, unknown>[],
-      prerequisites: getPrerequisites(role, analysis),
+      modules: modules as any,
+      prerequisites: getPrerequisites(role, analysis) as any,
     },
   });
 
@@ -180,7 +184,7 @@ async function updateOnboardingPath(
     throw new Error('Invalid repository name format');
   }
 
-  const octokit = getOctokit(path.repository.installationId);
+  const octokit = createInstallationOctokit(path.repository.installationId);
   const analysis = await analyzeCodebase(octokit, owner, repo);
 
   await job.updateProgress(60);
@@ -209,7 +213,7 @@ async function updateOnboardingPath(
   await prisma.onboardingPathV2.update({
     where: { id: pathId },
     data: {
-      modules: updatedModules as unknown as Record<string, unknown>[],
+      modules: updatedModules as any,
       estimatedHours: Math.ceil(totalMinutes / 60),
       updatedAt: new Date(),
     },
@@ -260,7 +264,7 @@ async function personalizeOnboardingPath(
 // ============================================================================
 
 async function analyzeCodebase(
-  octokit: ReturnType<typeof getOctokit>,
+  octokit: ReturnType<typeof createInstallationOctokit>,
   owner: string,
   repo: string
 ): Promise<CodebaseMetrics> {
@@ -276,22 +280,22 @@ async function analyzeCodebase(
       recursive: 'true',
     });
 
-    const files = tree.tree?.filter((t) => t.type === 'blob') || [];
-    const directories = tree.tree?.filter((t) => t.type === 'tree') || [];
+    const files = tree.tree?.filter((t: any) => t.type === 'blob') || [];
+    const directories = tree.tree?.filter((t: any) => t.type === 'tree') || [];
 
     // Calculate metrics
-    const totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
+    const totalSize = files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
     const averageFileSize = files.length > 0 ? totalSize / files.length : 0;
 
     // Detect test coverage
     const testFiles = files.filter(
-      (f) => f.path?.match(/\.(test|spec)\.(ts|js|tsx|jsx|py|go)$/)
+      (f: any) => f.path?.match(/\.(test|spec)\.(ts|js|tsx|jsx|py|go)$/)
     );
     const testCoverage = testFiles.length > 10;
 
     // Assess documentation quality
     const docFiles = files.filter(
-      (f) => f.path?.match(/\.(md|mdx|rst|txt)$/) && !f.path?.includes('node_modules')
+      (f: any) => f.path?.match(/\.(md|mdx|rst|txt)$/) && !f.path?.includes('node_modules')
     );
     const documentationQuality =
       docFiles.length > 20 ? 'high' : docFiles.length > 5 ? 'medium' : 'low';

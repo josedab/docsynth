@@ -323,19 +323,12 @@ export function startNLEditorWorker() {
 
           await job.updateProgress(100);
 
-          return {
-            type: 'single',
-            result,
-          };
+          return;
         } else if (type === 'batch') {
           // Process batch edit
           // Build document query
-          const whereClause: {
-            repositoryId: string;
-            id?: { in: string[] };
-            type?: string;
-            path?: { contains: string };
-          } = { repositoryId };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const whereClause: any = { repositoryId };
 
           if (targetDocuments && targetDocuments.length > 0) {
             whereClause.id = { in: targetDocuments };
@@ -411,14 +404,7 @@ export function startNLEditorWorker() {
             'Completed batch NL edit'
           );
 
-          return {
-            type: 'batch',
-            batchId: batch.id,
-            totalDocuments: documents.length,
-            successCount,
-            failedCount,
-            results,
-          };
+          return;
         } else {
           throw new Error('Invalid job type or missing parameters');
         }

@@ -122,14 +122,7 @@ export function startROIComputationWorker() {
 
         await job.updateProgress(100);
 
-        return {
-          organizationId,
-          period,
-          roi: metrics.roi.roiPercent,
-          hoursSaved: metrics.roi.totalReturn.hoursSaved,
-          dollarsSaved: metrics.roi.totalReturn.dollarsSaved,
-          totalCost: metrics.roi.totalInvestment.totalCost,
-        };
+        // Result logged above; void return required by JobProcessor
       } catch (error) {
         log.error({ error, organizationId }, 'ROI computation failed');
         throw error;

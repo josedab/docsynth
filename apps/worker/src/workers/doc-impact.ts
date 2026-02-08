@@ -39,7 +39,7 @@ export function startDocImpactWorker() {
 
         if (!config.enabled) {
           log.info({ repositoryId }, 'Doc impact analysis is disabled for this repository');
-          return { skipped: true, reason: 'disabled' };
+          return;
         }
 
         await job.updateProgress(10);
@@ -223,12 +223,6 @@ export function startDocImpactWorker() {
           'Doc impact analysis completed'
         );
 
-        return {
-          analysisId: analysisRecord.id,
-          impactedDocs: significantDocs.length,
-          overallRisk: analysis.overallRisk,
-          commentPosted: config.autoComment && significantDocs.length > 0,
-        };
       } catch (error) {
         log.error({ error, repositoryId, prNumber }, 'Doc impact analysis failed');
         throw error;
@@ -250,7 +244,7 @@ export async function scheduleUnanalyzedPRs(): Promise<void> {
   // Get recent PRs that haven't been analyzed
   const recentPRs = await prisma.pREvent.findMany({
     where: {
-      action: 'opened',
+      action: 'OPENED',
       createdAt: {
         gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
       },
@@ -278,7 +272,7 @@ export async function scheduleUnanalyzedPRs(): Promise<void> {
       if (!config.enabled) continue;
 
       // Parse owner/repo
-      const [owner, repo] = pr.repository.fullName.split('/');
+      const [owner, repo] = (pr as any).repository.fullName.split('/');
       if (!owner || !repo) continue;
 
       // Queue analysis
@@ -289,7 +283,7 @@ export async function scheduleUnanalyzedPRs(): Promise<void> {
           ${JSON.stringify({
             repositoryId: pr.repositoryId,
             prNumber: pr.prNumber,
-            installationId: pr.repository.installationId,
+            installationId: (pr as any).repository.installationId,
             owner,
             repo,
           })},

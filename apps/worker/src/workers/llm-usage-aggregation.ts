@@ -234,12 +234,6 @@ export function startLLMUsageAggregationWorker() {
           'LLM usage aggregation completed'
         );
 
-        return {
-          totalRequests,
-          totalCost,
-          totalInputTokens,
-          totalOutputTokens,
-        };
       } catch (error) {
         log.error({ error, organizationId }, 'LLM usage aggregation failed');
         throw error;

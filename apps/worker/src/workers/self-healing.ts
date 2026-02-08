@@ -213,7 +213,7 @@ Provide an updated version of the documentation that addresses these issues whil
             sectionsRegenerated,
             sectionsPending,
             sectionsFailed,
-            details: results,
+            details: results as unknown as import('@prisma/client').Prisma.InputJsonValue,
             completedAt: new Date(),
           },
         });
@@ -231,7 +231,7 @@ Provide an updated version of the documentation that addresses these issues whil
           'Self-healing run completed'
         );
 
-        return { runId: run.id, results };
+        // Result logged above; void return required by JobProcessor
       } catch (error) {
         log.error({ error, repositoryId }, 'Self-healing run failed');
         throw error;

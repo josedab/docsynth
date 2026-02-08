@@ -8,7 +8,7 @@
 import { createWorker, QUEUE_NAMES, type DocTestGenerationJobData } from '@docsynth/queue';
 import { prisma } from '@docsynth/database';
 import { createLogger } from '@docsynth/utils';
-import { getGitHubClient } from '@docsynth/github';
+import { GitHubClient } from '@docsynth/github';
 
 const log = createLogger('doc-testing-worker');
 
@@ -367,7 +367,7 @@ export function startDocTestingWorker() {
 
         if (!config.enabled) {
           log.info({ repositoryId }, 'Doc testing is not enabled for this repository');
-          return { skipped: true, reason: 'Doc testing not enabled' };
+          return;
         }
 
         await job.updateProgress(10);
@@ -455,16 +455,16 @@ export function startDocTestingWorker() {
           try {
             const [owner, repo] = repository.fullName.split('/');
             if (owner && repo) {
-              const github = getGitHubClient(repository.installationId);
+              const github = GitHubClient.forInstallation(repository.installationId);
               const { title, summary, conclusion } = generateCheckRunSummary(allResults, duration);
 
               // Get the latest commit SHA from the repository
-              const { data: repoData } = await github.repos.get({
+              const { data: repoData } = await (github as any).repos.get({
                 owner,
                 repo,
               });
 
-              const checkRun = await github.checks.create({
+              const checkRun = await (github as any).checks.create({
                 owner,
                 repo,
                 name: 'Documentation Code Examples',
@@ -496,16 +496,6 @@ export function startDocTestingWorker() {
           duration,
         }, 'Doc testing run completed');
 
-        return {
-          repositoryId,
-          documentId,
-          totalExamples,
-          passed,
-          failed,
-          errors,
-          skipped,
-          duration,
-        };
       } catch (error) {
         log.error({ error, repositoryId }, 'Doc testing run failed');
         throw error;

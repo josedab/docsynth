@@ -212,12 +212,7 @@ export function startAnalyticsComputationWorker() {
           'Analytics computation completed'
         );
 
-        return {
-          totalViews,
-          uniqueVisitors: uniqueVisitors.length,
-          topPagesCount: topPages.length,
-          gapsIdentified: gapAnalysis.length,
-        };
+        // Result logged above; void return required by JobProcessor
       } catch (error) {
         log.error({ error, repositoryId }, 'Analytics computation failed');
         throw error;

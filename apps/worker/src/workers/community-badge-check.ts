@@ -100,7 +100,7 @@ export function startCommunityBadgeCheckWorker() {
 
         if (!reputation) {
           log.info({ userId }, 'No reputation record found');
-          return { badgesAwarded: [] };
+          return;
         }
 
         await job.updateProgress(20);
@@ -248,7 +248,6 @@ export function startCommunityBadgeCheckWorker() {
           'Badge check completed'
         );
 
-        return { badgesAwarded };
       } catch (error) {
         log.error({ error, userId }, 'Badge check failed');
         throw error;
@@ -265,7 +264,7 @@ function getWeekKey(date: Date): string {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - d.getDay()); // Start of week
-  return d.toISOString().split('T')[0];
+  return d.toISOString().split('T')[0]!;
 }
 
 function calculateConsecutiveWeeks(weeklyActivity: Map<string, boolean>): number {
@@ -278,7 +277,7 @@ function calculateConsecutiveWeeks(weeklyActivity: Map<string, boolean>): number
 
   for (let i = 0; i < 52; i++) {
     // Check up to a year
-    const weekKey = checkDate.toISOString().split('T')[0];
+    const weekKey = checkDate.toISOString().split('T')[0]!;
     if (weeklyActivity.has(weekKey)) {
       consecutive++;
       checkDate.setDate(checkDate.getDate() - 7);

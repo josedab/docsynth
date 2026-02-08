@@ -68,7 +68,7 @@ export function startPollingWorker() {
         // Skip if polling is disabled (unless manual)
         if (!pollingSettings.enabled && !manual) {
           log.info({ repositoryId }, 'Polling disabled for repository, skipping');
-          return { skipped: true, reason: 'Polling disabled' };
+          return;
         }
 
         await job.updateProgress(20);
@@ -212,11 +212,11 @@ export function startPollingWorker() {
           details: result,
         };
 
-        updatedMetadata.pollingHistory = [newHistoryEntry, ...pollingHistory].slice(0, 50);
+        (updatedMetadata as any).pollingHistory = [newHistoryEntry, ...pollingHistory].slice(0, 50);
 
         await prisma.repository.update({
           where: { id: repositoryId },
-          data: { metadata: updatedMetadata },
+          data: { metadata: updatedMetadata as any },
         });
 
         await job.updateProgress(100);
@@ -231,7 +231,6 @@ export function startPollingWorker() {
           'Repository poll completed'
         );
 
-        return result;
       } catch (error) {
         log.error({ error, repositoryId }, 'Polling job failed');
 
@@ -274,7 +273,7 @@ export function startPollingWorker() {
                 metadata: {
                   ...(metadata || {}),
                   pollingHistory: [errorEntry, ...pollingHistory].slice(0, 50),
-                },
+                } as any,
               },
             });
           }
@@ -391,7 +390,7 @@ async function getCommitsSince(
       per_page: 100,
     });
 
-    return commits.map((commit: {
+    return (commits as any[]).map((commit: {
       sha: string;
       commit: { message: string; author: { name: string; date: string } };
     }) => ({

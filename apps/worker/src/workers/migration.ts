@@ -135,7 +135,7 @@ export function startMigrationWorker() {
                 importedDocuments: importedCount,
                 skippedDocuments: skippedCount,
                 failedDocuments: failedCount,
-                documents: migratedDocuments as unknown as Record<string, unknown>[],
+                documents: migratedDocuments as any,
                 errors,
               },
             });
@@ -175,7 +175,7 @@ export function startMigrationWorker() {
             importedDocuments: importedCount,
             skippedDocuments: skippedCount,
             failedDocuments: failedCount,
-            documents: migratedDocuments as unknown as Record<string, unknown>[],
+            documents: migratedDocuments as any,
             errors,
             completedAt: new Date(),
           },
@@ -195,14 +195,6 @@ export function startMigrationWorker() {
           'Migration completed'
         );
 
-        return {
-          migrationId,
-          status,
-          totalDocuments,
-          importedDocuments: importedCount,
-          skippedDocuments: skippedCount,
-          failedDocuments: failedCount,
-        };
       } catch (error) {
         log.error({ error, migrationId }, 'Migration job failed');
 
