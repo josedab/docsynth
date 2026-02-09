@@ -205,8 +205,7 @@ app.post('/approve/:analysisId', requireAuth, async (c) => {
       await addJob(QUEUE_NAMES.SELF_HEALING, {
         repositoryId: analysis.repositoryId,
         triggeredBy: 'manual' as const,
-        documentIds: body.documentIds,
-      });
+      } as any);
     }
   }
 

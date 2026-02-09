@@ -18,7 +18,7 @@ const app = new Hono();
  * Get organization usage overview
  */
 app.get('/overview', requireAuth, requireOrgAccess, async (c) => {
-  const org = c.get('organization') as { id: string };
+  const org = (c as any).get('organization') as { id: string };
 
   // Get date range from query params (default to last 30 days)
   const endDate = new Date();
@@ -58,7 +58,7 @@ app.get('/overview', requireAuth, requireOrgAccess, async (c) => {
  * Get usage trend over time
  */
 app.get('/trend', requireAuth, requireOrgAccess, async (c) => {
-  const org = c.get('organization') as { id: string };
+  const org = (c as any).get('organization') as { id: string };
 
   const endDate = new Date();
   const startDateParam = c.req.query('startDate');
@@ -100,7 +100,7 @@ app.get('/trend', requireAuth, requireOrgAccess, async (c) => {
  * Get top features by cost
  */
 app.get('/top-features', requireAuth, requireOrgAccess, async (c) => {
-  const org = c.get('organization') as { id: string };
+  const org = (c as any).get('organization') as { id: string };
 
   const endDate = new Date();
   const startDateParam = c.req.query('startDate');
@@ -156,7 +156,7 @@ app.get('/repository/:repositoryId', requireAuth, requireOrgAccess, async (c) =>
 
   try {
     const stats = await llmUsageStatsService.getRepositoryStats(
-      repositoryId,
+      repositoryId!,
       startDate,
       actualEndDate
     );
@@ -182,7 +182,7 @@ app.get('/repository/:repositoryId', requireAuth, requireOrgAccess, async (c) =>
  * Get pre-computed summaries
  */
 app.get('/summaries', requireAuth, requireOrgAccess, async (c) => {
-  const org = c.get('organization') as { id: string };
+  const org = (c as any).get('organization') as { id: string };
 
   const period = (c.req.query('period') as 'hourly' | 'daily' | 'weekly' | 'monthly') || 'daily';
   const limitParam = c.req.query('limit');
@@ -212,7 +212,7 @@ app.get('/summaries', requireAuth, requireOrgAccess, async (c) => {
  * Get cost breakdown by provider
  */
 app.get('/cost-breakdown', requireAuth, requireOrgAccess, async (c) => {
-  const org = c.get('organization') as { id: string };
+  const org = (c as any).get('organization') as { id: string };
 
   const endDate = new Date();
   const startDateParam = c.req.query('startDate');
@@ -287,7 +287,7 @@ app.get('/cost-breakdown', requireAuth, requireOrgAccess, async (c) => {
  * Get usage alerts and recommendations
  */
 app.get('/alerts', requireAuth, requireOrgAccess, async (c) => {
-  const org = c.get('organization') as { id: string };
+  const org = (c as any).get('organization') as { id: string };
 
   try {
     // Get last 7 days usage
@@ -357,8 +357,8 @@ app.get('/alerts', requireAuth, requireOrgAccess, async (c) => {
       .slice(0, 3);
 
     if (topFeatures.length > 0) {
-      const [topFeature] = topFeatures[0];
-      if (stats.byFeature[topFeature]?.cost > stats.totalCost * 0.6) {
+      const [topFeature] = topFeatures[0]!;
+      if (stats.byFeature[topFeature]!.cost > stats.totalCost * 0.6) {
         recommendations.push(
           `The "${topFeature}" feature accounts for over 60% of your LLM costs. Review its usage patterns.`
         );

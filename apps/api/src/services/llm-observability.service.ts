@@ -433,25 +433,25 @@ class LLMUsageStatsService {
       if (!stats.byProvider[log.provider]) {
         stats.byProvider[log.provider] = { requests: 0, tokens: 0, cost: 0 };
       }
-      stats.byProvider[log.provider].requests++;
-      stats.byProvider[log.provider].tokens += log.totalTokens;
-      stats.byProvider[log.provider].cost += log.estimatedCost;
+      stats.byProvider[log.provider]!.requests++;
+      stats.byProvider[log.provider]!.tokens += log.totalTokens;
+      stats.byProvider[log.provider]!.cost += log.estimatedCost;
 
       // By feature
       if (!stats.byFeature[log.feature]) {
         stats.byFeature[log.feature] = { requests: 0, tokens: 0, cost: 0 };
       }
-      stats.byFeature[log.feature].requests++;
-      stats.byFeature[log.feature].tokens += log.totalTokens;
-      stats.byFeature[log.feature].cost += log.estimatedCost;
+      stats.byFeature[log.feature]!.requests++;
+      stats.byFeature[log.feature]!.tokens += log.totalTokens;
+      stats.byFeature[log.feature]!.cost += log.estimatedCost;
 
       // By model
       if (!stats.byModel[log.model]) {
         stats.byModel[log.model] = { requests: 0, tokens: 0, cost: 0 };
       }
-      stats.byModel[log.model].requests++;
-      stats.byModel[log.model].tokens += log.totalTokens;
-      stats.byModel[log.model].cost += log.estimatedCost;
+      stats.byModel[log.model]!.requests++;
+      stats.byModel[log.model]!.tokens += log.totalTokens;
+      stats.byModel[log.model]!.cost += log.estimatedCost;
     }
 
     stats.avgLatencyMs = logs.length > 0 ? Math.round(totalLatency / logs.length) : 0;

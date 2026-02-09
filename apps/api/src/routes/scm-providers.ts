@@ -306,7 +306,7 @@ app.get('/stats/organization', requireAuth, requireOrgAccess, async (c) => {
     const providerType = (metadata?.providerType as string | undefined) ?? 'github';
 
     if (providerType in providerCounts) {
-      providerCounts[providerType]++;
+      providerCounts[providerType]!++;
     }
   }
 

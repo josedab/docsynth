@@ -7,7 +7,7 @@
 
 import { prisma } from '@docsynth/database';
 import { createLogger, getAnthropicClient, generateId } from '@docsynth/utils';
-import { getOctokit } from '@docsynth/github';
+import { createInstallationOctokit } from '@docsynth/github';
 
 const log = createLogger('onboarding-paths-service');
 
@@ -88,19 +88,19 @@ export async function analyzeCodebaseForRoles(
 
   const repository = await prisma.repository.findUnique({
     where: { id: repositoryId },
-    select: { name: true, owner: true },
+    select: { name: true, fullName: true },
   });
 
   if (!repository) {
     throw new Error('Repository not found');
   }
 
-  const [owner, repo] = repository.name.split('/');
+  const [owner, repo] = repository.fullName.split('/');
   if (!owner || !repo) {
     throw new Error('Invalid repository name format');
   }
 
-  const octokit = getOctokit(installationId);
+  const octokit = createInstallationOctokit(installationId);
 
   // Get repository languages
   const { data: languages } = await octokit.rest.repos.listLanguages({
@@ -118,7 +118,7 @@ export async function analyzeCodebaseForRoles(
     recursive: 'true',
   }).catch(() => ({ data: { tree: [] } }));
 
-  const paths = tree.tree?.map((t) => t.path || '') || [];
+  const paths = tree.tree?.map((t: { path?: string }) => t.path || '') || [];
 
   // Detect frameworks and patterns
   const frameworks = detectFrameworks(paths, primaryLanguages);
@@ -366,7 +366,7 @@ export async function generateOnboardingPath(
       title: `${capitalizeRole(role)} Developer Onboarding`,
       description: `Comprehensive onboarding path for ${role} developers, covering essential concepts, tools, and practices.`,
       estimatedHours: Math.ceil(totalMinutes / 60),
-      modules: modules as unknown as Record<string, unknown>[],
+      modules: modules as any,
       prerequisites: getPrerequisites(role),
     },
   });

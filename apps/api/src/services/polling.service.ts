@@ -146,12 +146,12 @@ export async function updatePollingConfig(
   log.info({ repositoryId, enabled: updatedPollingConfig.enabled }, 'Polling config updated');
 
   return {
-    enabled: updatedPollingConfig.enabled,
-    intervalMinutes: updatedPollingConfig.intervalMinutes,
-    mode: updatedPollingConfig.mode,
+    enabled: updatedPollingConfig.enabled as boolean,
+    intervalMinutes: updatedPollingConfig.intervalMinutes as number,
+    mode: updatedPollingConfig.mode as 'polling' | 'webhook' | 'hybrid',
     lastPolledAt: updatedPollingMetadata.lastPolledAt ? new Date(updatedPollingMetadata.lastPolledAt as string) : null,
     lastCommitSha: updatedPollingMetadata.lastCommitSha as string | null,
-    watchBranches: updatedPollingConfig.watchBranches,
+    watchBranches: updatedPollingConfig.watchBranches as string[],
   };
 }
 
@@ -355,7 +355,7 @@ export async function recordPollResult(result: PollResult, error?: string): Prom
     data: {
       metadata: {
         ...(metadata || {}),
-        pollingHistory: updatedHistory,
+        pollingHistory: updatedHistory as any,
       },
     },
   });
@@ -385,7 +385,7 @@ async function getCommitsSince(
       per_page: 100,
     });
 
-    return commits.map((commit: {
+    return (commits as any[]).map((commit: {
       sha: string;
       commit: { message: string; author: { name: string; date: string } };
     }) => ({

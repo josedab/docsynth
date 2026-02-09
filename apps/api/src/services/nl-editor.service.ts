@@ -443,7 +443,7 @@ export async function processBatchEdit(request: BatchEditRequest): Promise<Batch
   }
 
   const documents = await prisma.document.findMany({
-    where: whereClause,
+    where: whereClause as any,
     select: { id: true, path: true, title: true },
     take: 50, // Limit for safety
   });

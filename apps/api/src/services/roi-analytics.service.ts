@@ -268,7 +268,7 @@ export async function getProductivityMetrics(
   const generatedDocs = await prisma.generationJob.count({
     where: {
       repositoryId: { in: repositoryIds },
-      status: 'completed',
+      status: 'COMPLETED',
       createdAt: {
         gte: period.start,
         lt: period.end,
@@ -512,7 +512,7 @@ export async function getROITrends(
     const docsGenerated = await prisma.generationJob.count({
       where: {
         repositoryId: { in: repositoryIds },
-        status: 'completed',
+        status: 'COMPLETED',
         createdAt: {
           gte: date,
           lt: nextDate,
@@ -776,7 +776,7 @@ export async function generateROIReport(
   const metrics = await calculateROIMetrics(organizationId, period);
 
   if (format === 'json') {
-    return metrics;
+    return metrics as unknown as Record<string, unknown>;
   }
 
   if (format === 'csv') {
@@ -819,5 +819,5 @@ export async function generateROIReport(
 
   // PDF format would require a PDF library - return JSON for now
   log.warn('PDF format not yet implemented, returning JSON');
-  return metrics;
+  return metrics as unknown as Record<string, unknown>;
 }
