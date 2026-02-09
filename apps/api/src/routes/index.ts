@@ -91,6 +91,16 @@ import { pollingRoutes } from './polling.js';
 // SCM Provider Support
 import { scmProviderRoutes } from './scm-providers.js';
 
+// Next-gen features (v2)
+import { gitopsRoutes } from './gitops.js';
+import { prDocReviewRoutes } from './pr-doc-review.js';
+import { federatedHubRoutes } from './federated-hub.js';
+import { onboardingCopilotRoutes } from './onboarding-copilot.js';
+import { collaborativeEditorRoutes } from './collaborative-editor.js';
+import { apiChangelogRoutes } from './api-changelog.js';
+import { executiveReportsRoutes } from './executive-reports.js';
+import { sdkDocsRoutes } from './sdk-docs.js';
+
 // ============================================================================
 // Route Configuration
 // ============================================================================
@@ -205,6 +215,15 @@ const nextGenRoutes: RouteConfig[] = [
   { path: '/api/migration', router: migrationRoutes, description: 'Smart migration engine for importing docs' },
   { path: '/api/polling', router: pollingRoutes, description: 'Webhook-less change detection via polling' },
   { path: '/api/multi-repo-graph', router: multiRepoGraphRoutes, description: 'Multi-repository documentation graph' },
+  // Next-gen features v2
+  { path: '/api/gitops', router: gitopsRoutes, description: 'GitOps documentation-as-code configuration' },
+  { path: '/api/pr-doc-review', router: prDocReviewRoutes, description: 'AI documentation review in PR comments' },
+  { path: '/api/federated-hub', router: federatedHubRoutes, description: 'Federated multi-repo documentation hub' },
+  { path: '/api/onboarding-copilot', router: onboardingCopilotRoutes, description: 'Smart onboarding copilot with personalized paths' },
+  { path: '/api/collaborative-editor', router: collaborativeEditorRoutes, description: 'Real-time collaborative document editor' },
+  { path: '/api/api-changelog', router: apiChangelogRoutes, description: 'Automated API changelog and breaking change alerts' },
+  { path: '/api/executive-reports', router: executiveReportsRoutes, description: 'Executive ROI reports and dashboards' },
+  { path: '/api/sdk-docs', router: sdkDocsRoutes, description: 'Multi-language SDK documentation generator' },
 ];
 
 /**

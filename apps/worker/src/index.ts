@@ -40,6 +40,12 @@ import { startPollingWorker, schedulePeriodicPolling } from './workers/polling.j
 import { startNLEditorWorker } from './workers/nl-editor.js';
 import { startOrgGraphBuilderWorker } from './workers/org-graph-builder.js';
 import { startROIComputationWorker, scheduleWeeklyROIComputation } from './workers/roi-computation.js';
+// Next-gen v2 feature workers
+import { startPRDocReviewWorker } from './workers/pr-doc-review.js';
+import { startFederatedHubWorker } from './workers/federated-hub.js';
+import { startAPIChangelogWorker } from './workers/api-changelog.js';
+import { startExecutiveReportWorker } from './workers/executive-report.js';
+import { startSDKDocsGenerationWorker } from './workers/sdk-docs-generation.js';
 
 const log = createLogger('worker');
 
@@ -117,6 +123,12 @@ async function start() {
     workers.push(startOrgGraphBuilderWorker());
     workers.push(startNLEditorWorker());
     workers.push(startROIComputationWorker());
+    // Next-gen v2 feature workers
+    workers.push(startPRDocReviewWorker());
+    workers.push(startFederatedHubWorker());
+    workers.push(startAPIChangelogWorker());
+    workers.push(startExecutiveReportWorker());
+    workers.push(startSDKDocsGenerationWorker());
 
     // Schedule periodic drift scans (runs daily)
     await schedulePeriodicDriftScans();

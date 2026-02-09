@@ -35,6 +35,16 @@ DocSynth is an AI-powered documentation generator that automatically creates and
 - **Multi-SCM Support** - GitLab and Bitbucket support alongside GitHub
 - **Natural Language Doc Editing** - Modify documentation through natural language commands
 - **Documentation Analytics & ROI Dashboard** - Track documentation usage, productivity gains, and return on investment
+- **MCP Server** - Model Context Protocol server for AI coding agent integration
+- **GitOps Configuration** - Version-controlled documentation rules via .docsynth/ directory
+- **PR Documentation Review** - AI-generated documentation review comments on pull requests
+- **Federated Documentation Hub** - Unified portal aggregating docs across repositories
+- **Smart Onboarding Copilot** - Personalized interactive developer onboarding
+- **Collaborative Document Editor** - Real-time CRDT-based collaborative editing with AI suggestions
+- **API Changelog & Breaking Changes** - Automated API diff, changelog generation, and consumer alerts
+- **Executive ROI Reports** - C-level analytics dashboards with exportable PDF reports
+- **Self-Hosted Deployment** - Helm chart and Docker support with Ollama/vLLM backends
+- **Multi-Language SDK Docs** - Generate idiomatic SDK documentation for 10+ programming languages
 
 ## Authentication
 
@@ -103,6 +113,14 @@ DocSynth integrates with GitHub webhooks to automatically trigger documentation 
     { name: 'SCM Providers', description: 'Multi-SCM provider support (GitHub, GitLab, Bitbucket)' },
     { name: 'NL Editor', description: 'Natural language documentation editing' },
     { name: 'ROI Analytics', description: 'Documentation analytics and ROI dashboard' },
+    { name: 'GitOps', description: 'Documentation-as-code GitOps configuration' },
+    { name: 'PR Doc Review', description: 'AI documentation review in PR comments' },
+    { name: 'Federated Hub', description: 'Multi-repository federated documentation portal' },
+    { name: 'Onboarding Copilot', description: 'Smart personalized developer onboarding' },
+    { name: 'Collaborative Editor', description: 'Real-time collaborative document editing' },
+    { name: 'API Changelog', description: 'Automated API changelog and breaking change alerts' },
+    { name: 'Executive Reports', description: 'Executive ROI dashboards and scheduled reports' },
+    { name: 'SDK Docs', description: 'Multi-language SDK documentation generator' },
   ],
   paths: {
     // Health
