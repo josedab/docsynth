@@ -176,25 +176,25 @@ describe('LLM Observability Service', () => {
           if (!stats.byProvider[log.provider]) {
             stats.byProvider[log.provider] = { requests: 0, tokens: 0, cost: 0 };
           }
-          stats.byProvider[log.provider].requests++;
-          stats.byProvider[log.provider].tokens += log.totalTokens;
-          stats.byProvider[log.provider].cost += log.estimatedCost;
+          stats.byProvider[log.provider]!.requests++;
+          stats.byProvider[log.provider]!.tokens += log.totalTokens;
+          stats.byProvider[log.provider]!.cost += log.estimatedCost;
 
           // By feature
           if (!stats.byFeature[log.feature]) {
             stats.byFeature[log.feature] = { requests: 0, tokens: 0, cost: 0 };
           }
-          stats.byFeature[log.feature].requests++;
-          stats.byFeature[log.feature].tokens += log.totalTokens;
-          stats.byFeature[log.feature].cost += log.estimatedCost;
+          stats.byFeature[log.feature]!.requests++;
+          stats.byFeature[log.feature]!.tokens += log.totalTokens;
+          stats.byFeature[log.feature]!.cost += log.estimatedCost;
 
           // By model
           if (!stats.byModel[log.model]) {
             stats.byModel[log.model] = { requests: 0, tokens: 0, cost: 0 };
           }
-          stats.byModel[log.model].requests++;
-          stats.byModel[log.model].tokens += log.totalTokens;
-          stats.byModel[log.model].cost += log.estimatedCost;
+          stats.byModel[log.model]!.requests++;
+          stats.byModel[log.model]!.tokens += log.totalTokens;
+          stats.byModel[log.model]!.cost += log.estimatedCost;
         }
 
         stats.avgLatencyMs = logs.length > 0 ? Math.round(totalLatency / logs.length) : 0;
@@ -247,10 +247,10 @@ describe('LLM Observability Service', () => {
       expect(stats.totalTokens).toBe(500);
       expect(stats.totalCost).toBe(1.5);
       expect(stats.avgLatencyMs).toBe(500);
-      expect(stats.byProvider['anthropic'].requests).toBe(2);
-      expect(stats.byProvider['openai'].requests).toBe(1);
-      expect(stats.byFeature['ai-doc-editor'].requests).toBe(2);
-      expect(stats.byModel['claude-sonnet-4-20250514'].requests).toBe(2);
+      expect(stats.byProvider['anthropic']!.requests).toBe(2);
+      expect(stats.byProvider['openai']!.requests).toBe(1);
+      expect(stats.byFeature['ai-doc-editor']!.requests).toBe(2);
+      expect(stats.byModel['claude-sonnet-4-20250514']!.requests).toBe(2);
     });
   });
 
@@ -320,11 +320,11 @@ describe('LLM Observability Service', () => {
       const trends = calculateTrends(logs);
 
       expect(trends).toHaveLength(2);
-      expect(trends[0].date).toBe('2024-03-01');
-      expect(trends[0].requests).toBe(2);
-      expect(trends[0].tokens).toBe(300);
-      expect(trends[1].date).toBe('2024-03-02');
-      expect(trends[1].requests).toBe(1);
+      expect(trends[0]!.date).toBe('2024-03-01');
+      expect(trends[0]!.requests).toBe(2);
+      expect(trends[0]!.tokens).toBe(300);
+      expect(trends[1]!.date).toBe('2024-03-02');
+      expect(trends[1]!.requests).toBe(1);
     });
   });
 

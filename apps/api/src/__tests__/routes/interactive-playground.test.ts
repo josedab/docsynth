@@ -182,12 +182,12 @@ describe('Interactive Playgrounds', () => {
           if (line.includes('PASS')) {
             const match = line.match(/PASS:\s+(.+?)\s+\((\d+)ms\)/);
             if (match) {
-              results.push({ name: match[1], passed: true, duration: parseInt(match[2]) });
+              results.push({ name: match[1]!, passed: true, duration: parseInt(match[2]!) });
             }
           } else if (line.includes('FAIL')) {
             const match = line.match(/FAIL:\s+(.+?)\s+-\s+(.+)/);
             if (match) {
-              results.push({ name: match[1], passed: false, duration: 0, error: match[2] });
+              results.push({ name: match[1]!, passed: false, duration: 0, error: match[2] });
             }
           }
         }
