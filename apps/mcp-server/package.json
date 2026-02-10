@@ -1,0 +1,31 @@
+{
+  "name": "@docsynth/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DocSynth MCP Server - Expose documentation capabilities to AI coding agents",
+  "bin": {
+    "docsynth-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@docsynth/types": "*",
+    "@docsynth/utils": "*",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "vitest": "^4.0.18",
+    "@types/node": "^20.10.0"
+  }
+}
