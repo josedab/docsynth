@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "docsynth.fullname" . }}-api
+  labels:
+    app.kubernetes.io/component: api
+    {{- include "docsynth.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - port: {{ .Values.api.service.port }}
+      targetPort: 3001
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/component: api
+    {{- include "docsynth.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,130 @@
+# ============================================================================
+# DocSynth Self-Hosted Production Deployment
+# ============================================================================
+# Usage:
+#   docker compose -f docker-compose.production.yml up -d
+#
+# Required environment variables (set in .env):
+#   DATABASE_URL, REDIS_URL, JWT_SECRET
+#   LLM_PROVIDER, LLM_API_KEY (or OLLAMA_BASE_URL for self-hosted LLM)
+#   GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY (for GitHub integration)
+# ============================================================================
+
+services:
+  # ──────────────────────────────────────────────────────────────────────────
+  # API Server
+  # ──────────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      target: api
+    ports:
+      - "${API_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://docsynth:docsynth@postgres:5432/docsynth}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      # LLM Configuration
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+      AWS_BEDROCK_REGION: ${AWS_BEDROCK_REGION:-}
+      # SCM Configuration
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITLAB_URL: ${GITLAB_URL:-}
+      GITLAB_TOKEN: ${GITLAB_TOKEN:-}
+      BITBUCKET_URL: ${BITBUCKET_URL:-}
+      BITBUCKET_TOKEN: ${BITBUCKET_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Worker
+  # ──────────────────────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      target: worker
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://docsynth:docsynth@postgres:5432/docsynth}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+      AWS_BEDROCK_REGION: ${AWS_BEDROCK_REGION:-}
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # PostgreSQL
+  # ──────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docsynth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docsynth}
+      POSTGRES_DB: ${POSTGRES_DB:-docsynth}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docsynth}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Redis
+  # ──────────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+volumes:
+  postgres_data:
+  redis_data:

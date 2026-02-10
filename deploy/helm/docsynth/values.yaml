@@ -1,0 +1,195 @@
+# ============================================================================
+# DocSynth Helm Chart Values
+# ============================================================================
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# ──────────────────────────────────────────────────────────────────────────
+# API Server
+# ──────────────────────────────────────────────────────────────────────────
+api:
+  replicaCount: 2
+  image:
+    repository: docsynth/api
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3001
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilization: 80
+  env:
+    NODE_ENV: production
+    PORT: "3001"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Worker
+# ──────────────────────────────────────────────────────────────────────────
+worker:
+  replicaCount: 2
+  image:
+    repository: docsynth/worker
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilization: 70
+
+# ──────────────────────────────────────────────────────────────────────────
+# PostgreSQL
+# ──────────────────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: docsynth
+    username: docsynth
+    password: docsynth
+    database: docsynth
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+  # Set to false and provide externalDatabase if using external PostgreSQL
+  # externalDatabase:
+  #   host: your-postgres-host
+  #   port: 5432
+  #   database: docsynth
+  #   user: docsynth
+  #   password: ""
+  #   existingSecret: ""
+
+# ──────────────────────────────────────────────────────────────────────────
+# Redis
+# ──────────────────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+  # Set to false and provide externalRedis if using external Redis
+  # externalRedis:
+  #   host: your-redis-host
+  #   port: 6379
+  #   password: ""
+
+# ──────────────────────────────────────────────────────────────────────────
+# LLM Provider Configuration
+# ──────────────────────────────────────────────────────────────────────────
+llm:
+  # Provider: anthropic, openai, ollama, azure-openai, aws-bedrock
+  provider: anthropic
+
+  # Anthropic (Claude)
+  anthropic:
+    apiKey: ""
+    # existingSecret: ""
+    # secretKey: "api-key"
+
+  # OpenAI
+  openai:
+    apiKey: ""
+
+  # Ollama (self-hosted, air-gapped)
+  ollama:
+    enabled: false
+    baseUrl: "http://ollama:11434"
+    model: "llama3.1:70b"
+    # Deploy Ollama as sidecar or separate service
+    # deploy:
+    #   enabled: true
+    #   image: ollama/ollama:latest
+    #   gpuEnabled: true
+
+  # Azure OpenAI
+  azureOpenai:
+    endpoint: ""
+    apiKey: ""
+    deploymentName: ""
+
+  # AWS Bedrock
+  awsBedrock:
+    region: ""
+    # Uses IAM role or service account for auth
+
+# ──────────────────────────────────────────────────────────────────────────
+# SCM Provider Configuration
+# ──────────────────────────────────────────────────────────────────────────
+scm:
+  github:
+    appId: ""
+    privateKey: ""
+    clientId: ""
+    clientSecret: ""
+    # For GitHub Enterprise Server
+    # baseUrl: "https://github.yourcompany.com/api/v3"
+
+  gitlab:
+    enabled: false
+    url: "https://gitlab.com"
+    token: ""
+    # For self-managed GitLab
+    # url: "https://gitlab.yourcompany.com"
+
+  bitbucket:
+    enabled: false
+    url: "https://api.bitbucket.org/2.0"
+    token: ""
+    # For Bitbucket Data Center
+    # url: "https://bitbucket.yourcompany.com/rest/api/1.0"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Ingress
+# ──────────────────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: docsynth.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# ──────────────────────────────────────────────────────────────────────────
+# Security
+# ──────────────────────────────────────────────────────────────────────────
+secrets:
+  jwtSecret: ""
+  # existingSecret: "docsynth-secrets"
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
