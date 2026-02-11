@@ -13,6 +13,7 @@ February 6, 2026
 ### 1. Core Abstraction Layer
 
 #### `/apps/api/src/services/scm-provider.ts` (155 lines)
+
 - Defines the `SCMProvider` interface
 - Establishes common types for all providers:
   - `SCMRepository`, `SCMPullRequest`, `SCMChangedFile`
@@ -23,9 +24,11 @@ February 6, 2026
 ### 2. Provider Implementations
 
 #### `/apps/api/src/services/providers/github.provider.ts` (590 lines)
+
 **Purpose:** Wraps the existing `@docsynth/github` package to implement SCMProvider interface
 
 **Key Features:**
+
 - Uses existing GitHubClient with Octokit
 - Full GitHub App integration support
 - Native check runs API support
@@ -33,16 +36,19 @@ February 6, 2026
 - Complete PR, commit, and file operations
 
 **Configuration:**
+
 ```typescript
 {
-  installationId: number
+  installationId: number;
 }
 ```
 
 #### `/apps/api/src/services/providers/gitlab.provider.ts` (609 lines)
+
 **Purpose:** Direct REST API implementation for GitLab (no external SDK)
 
 **Key Features:**
+
 - GitLab REST API v4 integration
 - Supports self-hosted GitLab instances
 - Merge requests (GitLab's equivalent to PRs)
@@ -50,6 +56,7 @@ February 6, 2026
 - Token-based webhook verification
 
 **Configuration:**
+
 ```typescript
 {
   token: string,
@@ -58,14 +65,17 @@ February 6, 2026
 ```
 
 **Notable Differences:**
+
 - Uses `iid` (project-scoped ID) for merge requests
 - Commit statuses are created, not updated (GitLab API limitation)
 - No pagination in diff stats
 
 #### `/apps/api/src/services/providers/bitbucket.provider.ts` (653 lines)
+
 **Purpose:** Direct REST API implementation for Bitbucket (no external SDK)
 
 **Key Features:**
+
 - Bitbucket Cloud REST API 2.0 integration
 - Pull requests support
 - Build statuses instead of check runs
@@ -73,6 +83,7 @@ February 6, 2026
 - App Password authentication
 
 **Configuration:**
+
 ```typescript
 {
   username: string,
@@ -82,6 +93,7 @@ February 6, 2026
 ```
 
 **Notable Differences:**
+
 - Uses Basic Auth with App Passwords
 - Limited webhook signature verification
 - UUIDs converted to numeric IDs
@@ -90,9 +102,11 @@ February 6, 2026
 ### 3. Factory & Utilities
 
 #### `/apps/api/src/services/scm-provider-factory.ts` (211 lines)
+
 **Purpose:** Provider creation, detection, and capability management
 
 **Key Functions:**
+
 - `createSCMProvider(type, config)` - Creates provider instances
 - `detectProvider(url)` - Detects provider from repository URL
 - `parseRepoUrl(url)` - Extracts owner/repo from URLs
@@ -101,6 +115,7 @@ February 6, 2026
 - `getProviderCapabilities(type)` - Returns provider feature matrix
 
 **URL Detection Patterns:**
+
 - GitHub: `github.com`, `git@github.com:`
 - GitLab: `gitlab.com`, `gitlab.*`, custom domains
 - Bitbucket: `bitbucket.org`, `git@bitbucket.org:`
@@ -108,21 +123,23 @@ February 6, 2026
 ### 4. REST API Routes
 
 #### `/apps/api/src/routes/scm-providers.ts` (417 lines)
+
 **Purpose:** HTTP endpoints for managing SCM provider configurations
 
 **Endpoints:**
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/scm-providers` | List supported providers with capabilities |
-| `POST` | `/api/scm-providers/test` | Test connection to a provider |
-| `GET` | `/api/scm-providers/:repositoryId` | Get provider type for a repository |
-| `PUT` | `/api/scm-providers/:repositoryId` | Set/update provider config for a repository |
-| `POST` | `/api/scm-providers/detect` | Detect provider from repository URL |
-| `GET` | `/api/scm-providers/stats/organization` | Get provider statistics for an org |
-| `POST` | `/api/scm-providers/:repositoryId/migrate` | Migrate repository to different provider |
+| Method | Path                                       | Description                                 |
+| ------ | ------------------------------------------ | ------------------------------------------- |
+| `GET`  | `/api/scm-providers`                       | List supported providers with capabilities  |
+| `POST` | `/api/scm-providers/test`                  | Test connection to a provider               |
+| `GET`  | `/api/scm-providers/:repositoryId`         | Get provider type for a repository          |
+| `PUT`  | `/api/scm-providers/:repositoryId`         | Set/update provider config for a repository |
+| `POST` | `/api/scm-providers/detect`                | Detect provider from repository URL         |
+| `GET`  | `/api/scm-providers/stats/organization`    | Get provider statistics for an org          |
+| `POST` | `/api/scm-providers/:repositoryId/migrate` | Migrate repository to different provider    |
 
 **Features:**
+
 - Provider configuration validation
 - Connection testing before saving
 - Organization-level provider statistics
@@ -131,7 +148,9 @@ February 6, 2026
 ### 5. Documentation & Tests
 
 #### `/apps/api/src/services/providers/README.md`
+
 Comprehensive documentation including:
+
 - Architecture overview
 - Usage examples for each provider
 - API endpoint documentation
@@ -140,7 +159,9 @@ Comprehensive documentation including:
 - Performance tips
 
 #### `/apps/api/src/__tests__/services/scm-provider-factory.test.ts`
+
 Test suite covering:
+
 - URL detection for all providers (21 tests)
 - URL parsing (SSH and HTTPS formats)
 - Provider validation
@@ -151,21 +172,22 @@ Test suite covering:
 ### 6. Integration
 
 #### `/apps/api/src/routes/index.ts` (Modified)
+
 - Added import for `scmProviderRoutes`
 - Registered route at `/api/scm-providers`
 - Added to repository routes group
 
 ## Provider Feature Matrix
 
-| Feature | GitHub | GitLab | Bitbucket |
-|---------|--------|--------|-----------|
-| **Check/Status** | Check Runs | Commit Statuses | Build Statuses |
-| **Webhook Verification** | HMAC SHA256 | Token | User-Agent |
-| **PR/MR Support** | Pull Requests | Merge Requests | Pull Requests |
-| **File Operations** | ✅ | ✅ | ✅ |
-| **Commit Operations** | ✅ | ✅ | ✅ |
-| **Self-Hosted Support** | ❌ | ✅ | ❌ |
-| **Authentication** | GitHub App | PAT/OAuth | App Password |
+| Feature                  | GitHub        | GitLab          | Bitbucket      |
+| ------------------------ | ------------- | --------------- | -------------- |
+| **Check/Status**         | Check Runs    | Commit Statuses | Build Statuses |
+| **Webhook Verification** | HMAC SHA256   | Token           | User-Agent     |
+| **PR/MR Support**        | Pull Requests | Merge Requests  | Pull Requests  |
+| **File Operations**      | ✅            | ✅              | ✅             |
+| **Commit Operations**    | ✅            | ✅              | ✅             |
+| **Self-Hosted Support**  | ❌            | ✅              | ❌             |
+| **Authentication**       | GitHub App    | PAT/OAuth       | App Password   |
 
 ## Code Statistics
 
@@ -181,38 +203,48 @@ Test suite covering:
 ## Implementation Highlights
 
 ### 1. Unified Interface
+
 All providers implement the same `SCMProvider` interface, ensuring consistent behavior across platforms:
+
 ```typescript
 interface SCMProvider {
-  getRepository(owner, repo): Promise<SCMRepository>
-  getPullRequest(owner, repo, prNumber): Promise<SCMPullRequest>
-  getPRFiles(owner, repo, prNumber): Promise<SCMChangedFile[]>
-  createPRComment(owner, repo, prNumber, body): Promise<void>
+  getRepository(owner, repo): Promise<SCMRepository>;
+  getPullRequest(owner, repo, prNumber): Promise<SCMPullRequest>;
+  getPRFiles(owner, repo, prNumber): Promise<SCMChangedFile[]>;
+  createPRComment(owner, repo, prNumber, body): Promise<void>;
   // ... and more
 }
 ```
 
 ### 2. Smart Detection
+
 Automatic provider detection from repository URLs:
+
 ```typescript
-detectProvider('https://github.com/owner/repo') // => 'github'
-detectProvider('git@gitlab.com:owner/repo.git') // => 'gitlab'
+detectProvider('https://github.com/owner/repo'); // => 'github'
+detectProvider('git@gitlab.com:owner/repo.git'); // => 'gitlab'
 ```
 
 ### 3. Platform Abstraction
+
 Differences between platforms are abstracted:
+
 - GitHub Check Runs ↔ GitLab Commit Statuses ↔ Bitbucket Build Statuses
 - GitHub Pull Requests ↔ GitLab Merge Requests ↔ Bitbucket Pull Requests
 - Different webhook signature mechanisms
 
 ### 4. Type Safety
+
 Full TypeScript type safety throughout:
+
 - Type guards for provider validation
 - Discriminated unions for provider configs
 - Proper type conversions for API responses
 
 ### 5. Error Handling
+
 Consistent error handling across providers:
+
 - Uses `ExternalServiceError` from `@docsynth/utils`
 - Proper logging via `createLogger`
 - User-friendly error messages
@@ -220,6 +252,7 @@ Consistent error handling across providers:
 ## Usage Examples
 
 ### Creating a Provider
+
 ```typescript
 import { createSCMProvider } from './services/scm-provider-factory.js';
 
@@ -232,6 +265,7 @@ const pr = await provider.getPullRequest('owner', 'repo', 123);
 ```
 
 ### Detecting and Parsing URLs
+
 ```typescript
 import { detectProvider, parseRepoUrl } from './services/scm-provider-factory.js';
 
@@ -241,6 +275,7 @@ const { owner, repo } = parseRepoUrl(url); // { owner: 'owner', repo: 'repo' }
 ```
 
 ### Using the API
+
 ```bash
 # List supported providers
 GET /api/scm-providers
@@ -301,6 +336,7 @@ For existing DocSynth installations using GitHub:
 ## Dependencies
 
 **New Dependencies:** None!
+
 - GitHub provider uses existing `@docsynth/github` package
 - GitLab and Bitbucket providers use native `fetch` API
 - All providers use existing `@docsynth/utils` for logging and errors

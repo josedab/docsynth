@@ -1,52 +1,153 @@
 import { z } from 'zod';
 
 // Environment configuration schema
-const envSchema = z.object({
-  // Node environment
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+const envSchema = z
+  .object({
+    // Node environment
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
-  // Server
-  PORT: z.coerce.number().default(3000),
-  HOST: z.string().default('0.0.0.0'),
+    // Demo mode - skips GitHub App requirement, uses sample data
+    DEMO_MODE: z
+      .string()
+      .transform((v) => v === 'true')
+      .default('false'),
 
-  // Database
-  DATABASE_URL: z.string().url(),
+    // Server
+    PORT: z.coerce.number().default(3000),
+    HOST: z.string().default('0.0.0.0'),
 
-  // Redis
-  REDIS_URL: z.string().url(),
+    // Database
+    DATABASE_URL: z.string().url(),
 
-  // GitHub App
-  GITHUB_APP_ID: z.string(),
-  GITHUB_APP_PRIVATE_KEY: z.string(),
-  GITHUB_CLIENT_ID: z.string(),
-  GITHUB_CLIENT_SECRET: z.string(),
-  GITHUB_WEBHOOK_SECRET: z.string(),
+    // Redis
+    REDIS_URL: z.string().url(),
 
-  // Copilot SDK
-  COPILOT_API_KEY: z.string().optional(),
+    // GitHub App (required unless DEMO_MODE=true)
+    GITHUB_APP_ID: z.string().optional().default(''),
+    GITHUB_APP_PRIVATE_KEY: z.string().optional().default(''),
+    GITHUB_CLIENT_ID: z.string().optional().default(''),
+    GITHUB_CLIENT_SECRET: z.string().optional().default(''),
+    GITHUB_WEBHOOK_SECRET: z.string().optional().default(''),
 
-  // Stripe (optional for development)
-  STRIPE_SECRET_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    // Copilot SDK
+    COPILOT_API_KEY: z.string().optional(),
 
-  // MCP Servers (optional)
-  JIRA_MCP_URL: z.string().url().optional(),
-  SLACK_MCP_URL: z.string().url().optional(),
-  CONFLUENCE_MCP_URL: z.string().url().optional(),
+    // Stripe (optional for development)
+    STRIPE_SECRET_KEY: z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
-  // Session/Auth
-  SESSION_SECRET: z.string().min(32),
-  JWT_SECRET: z.string().min(32),
+    // MCP Servers (optional)
+    JIRA_MCP_URL: z.string().url().optional(),
+    SLACK_MCP_URL: z.string().url().optional(),
+    CONFLUENCE_MCP_URL: z.string().url().optional(),
 
-  // URLs
-  APP_URL: z.string().url().default('http://localhost:3000'),
-  API_URL: z.string().url().default('http://localhost:3001'),
+    // Session/Auth
+    SESSION_SECRET: z.string().min(32),
+    JWT_SECRET: z.string().min(32),
 
-  // Logging
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-});
+    // URLs
+    APP_URL: z.string().url().default('http://localhost:3000'),
+    API_URL: z.string().url().default('http://localhost:3001'),
+
+    // Logging
+    LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  })
+  .refine(
+    (data) => {
+      if (data.DEMO_MODE) return true;
+      return (
+        data.GITHUB_APP_ID &&
+        data.GITHUB_APP_PRIVATE_KEY &&
+        data.GITHUB_CLIENT_ID &&
+        data.GITHUB_CLIENT_SECRET
+      );
+    },
+    {
+      message:
+        'GitHub App credentials (GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET) are required unless DEMO_MODE=true',
+      path: ['GITHUB_APP_ID'],
+    }
+  );
 
 export type EnvConfig = z.infer<typeof envSchema>;
+
+interface ConfigHint {
+  field: string;
+  message: string;
+  hint: string | null;
+}
+
+function diagnoseConfigErrors(issues: z.ZodIssue[]): ConfigHint[] {
+  const envValues: Record<string, string | undefined> = {
+    SESSION_SECRET: process.env.SESSION_SECRET,
+    JWT_SECRET: process.env.JWT_SECRET,
+    DATABASE_URL: process.env.DATABASE_URL,
+    REDIS_URL: process.env.REDIS_URL,
+    GITHUB_APP_ID: process.env.GITHUB_APP_ID,
+    DEMO_MODE: process.env.DEMO_MODE,
+  };
+
+  return issues.map((issue) => {
+    const field = issue.path.join('.');
+    const message = issue.message;
+
+    // Detect placeholder values left from .env.example
+    if (field === 'SESSION_SECRET' || field === 'JWT_SECRET') {
+      if (envValues[field]?.includes('CHANGE_ME')) {
+        return {
+          field,
+          message: 'Still has placeholder value from .env.example',
+          hint: 'Generate with: openssl rand -hex 32',
+        };
+      }
+      return {
+        field,
+        message,
+        hint: 'Must be at least 32 chars. Generate with: openssl rand -hex 32',
+      };
+    }
+
+    if (field === 'DATABASE_URL') {
+      if (!envValues.DATABASE_URL) {
+        return {
+          field,
+          message: 'Missing',
+          hint: 'Add to .env: DATABASE_URL=postgresql://docsynth:docsynth_dev@localhost:5432/docsynth',
+        };
+      }
+      return {
+        field,
+        message,
+        hint: 'Ensure PostgreSQL is running: docker compose up -d postgres',
+      };
+    }
+
+    if (field === 'REDIS_URL') {
+      if (!envValues.REDIS_URL) {
+        return { field, message: 'Missing', hint: 'Add to .env: REDIS_URL=redis://localhost:6379' };
+      }
+      return { field, message, hint: 'Ensure Redis is running: docker compose up -d redis' };
+    }
+
+    if (field === 'GITHUB_APP_ID') {
+      const isPlaceholder = envValues.GITHUB_APP_ID === 'your_app_id' || !envValues.GITHUB_APP_ID;
+      if (isPlaceholder && envValues.DEMO_MODE !== 'true') {
+        return {
+          field,
+          message: 'GitHub App not configured and DEMO_MODE is not enabled',
+          hint: 'Quick fix: Add DEMO_MODE=true to .env  (or configure GitHub App credentials)',
+        };
+      }
+      return {
+        field,
+        message,
+        hint: 'Set DEMO_MODE=true in .env or configure GitHub App credentials',
+      };
+    }
+
+    return { field, message, hint: null };
+  });
+}
 
 let cachedConfig: EnvConfig | null = null;
 
@@ -58,8 +159,20 @@ export function getEnvConfig(): EnvConfig {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    const formatted = result.error.format();
-    console.error('❌ Invalid environment variables:', formatted);
+    const hints = diagnoseConfigErrors(result.error.issues);
+    console.error('\n❌ Configuration Error\n');
+
+    for (const { field, message, hint } of hints) {
+      console.error(`  ${field}: ${message}`);
+      if (hint) {
+        console.error(`    → ${hint}\n`);
+      } else {
+        console.error('');
+      }
+    }
+
+    console.error('  Run "npm run doctor" to check your environment.');
+    console.error('  Or run "./scripts/setup.sh" for guided setup.\n');
     throw new Error('Invalid environment configuration');
   }
 
@@ -194,5 +307,10 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     },
   },
 };
+
+export function isDemoMode(): boolean {
+  const config = getEnvConfigSafe();
+  return config?.DEMO_MODE === true;
+}
 
 export { envSchema };

@@ -5,7 +5,7 @@
 **Document Version:** 1.0  
 **Last Updated:** January 28, 2026  
 **Author:** Jose David Baena  
-**Status:** Draft  
+**Status:** Draft
 
 ---
 
@@ -64,6 +64,7 @@ DocSynth is an AI-powered documentation generator that maintains always-current 
 Everyone agrees documentation is important. No one wants to write it:
 
 **The Numbers:**
+
 - **91% of developers** say good documentation is important
 - **54% of documentation** is outdated within 3 months of writing
 - **Only 23%** of developer time "should" be spent on docs is actually spent
@@ -101,29 +102,30 @@ Everyone agrees documentation is important. No one wants to write it:
 
 Documentation is separate from development:
 
-| Activity | Development | Documentation |
-|----------|-------------|---------------|
-| When | During coding | After coding (maybe) |
-| Who | Developer | Developer (or tech writer) |
-| Tools | IDE, GitHub | Confluence, README |
-| Review | PR review | Rarely reviewed |
-| Testing | CI/CD | No validation |
+| Activity | Development   | Documentation              |
+| -------- | ------------- | -------------------------- |
+| When     | During coding | After coding (maybe)       |
+| Who      | Developer     | Developer (or tech writer) |
+| Tools    | IDE, GitHub   | Confluence, README         |
+| Review   | PR review     | Rarely reviewed            |
+| Testing  | CI/CD         | No validation              |
 
 **The Solution:** Make documentation a byproduct of development, not a separate task.
 
 ### 2.4 Current Solutions Fall Short
 
-| Solution | Limitation |
-|----------|------------|
-| **JSDoc/Docstrings** | Function-level only, manual maintenance |
-| **ReadMe.io/GitBook** | Hosting only, doesn't generate content |
-| **Mintlify** | API docs only, limited to OpenAPI |
-| **AI Assistants** | On-demand generation, not continuous |
-| **Tech Writers** | Expensive, don't scale, still lag code |
+| Solution              | Limitation                              |
+| --------------------- | --------------------------------------- |
+| **JSDoc/Docstrings**  | Function-level only, manual maintenance |
+| **ReadMe.io/GitBook** | Hosting only, doesn't generate content  |
+| **Mintlify**          | API docs only, limited to OpenAPI       |
+| **AI Assistants**     | On-demand generation, not continuous    |
+| **Tech Writers**      | Expensive, don't scale, still lag code  |
 
 ### 2.5 The Opportunity
 
 DocSynth solves the problem by:
+
 1. **Observing** code changes as they happen
 2. **Understanding** intent from PRs, tickets, discussions
 3. **Generating** human-quality documentation automatically
@@ -137,14 +139,17 @@ DocSynth solves the problem by:
 ### 3.1 Market Size & Growth
 
 **Total Addressable Market (TAM):**
+
 - Developer documentation tools: $5B+ by 2030
 - Technical writing services: $3B+ annually
 
 **Serviceable Addressable Market (SAM):**
+
 - Automated documentation tools: $2-5B by 2030
 - Includes: doc generators, knowledge bases, API docs
 
 **Serviceable Obtainable Market (SOM):**
+
 - AI-powered documentation: $300-500M by 2028
 - Based on: 50M+ active repos, 2% adoption, $300/year average
 
@@ -162,12 +167,12 @@ DocSynth solves the problem by:
 
 **Documentation Pain by Team Size:**
 
-| Size | Pain Level | Current Solution | Budget |
-|------|------------|------------------|--------|
-| 1-10 | High | None/README | Low |
-| 10-50 | Very High | Wiki/Confluence | Medium |
-| 50-200 | Extreme | Tech writers + tools | High |
-| 200+ | Extreme | Large tech writing team | Very High |
+| Size   | Pain Level | Current Solution        | Budget    |
+| ------ | ---------- | ----------------------- | --------- |
+| 1-10   | High       | None/README             | Low       |
+| 10-50  | Very High  | Wiki/Confluence         | Medium    |
+| 50-200 | Extreme    | Tech writers + tools    | High      |
+| 200+   | Extreme    | Large tech writing team | Very High |
 
 ---
 
@@ -178,75 +183,86 @@ DocSynth solves the problem by:
 #### Persona 1: Sam - Senior Developer
 
 **Demographics:**
+
 - Title: Senior Software Engineer
 - Experience: 7+ years
 - Role: Technical lead, documentation owner
 
 **Goals:**
+
 - Reduce time spent on documentation
 - Keep docs accurate without effort
 - Help team members find information
 
 **Pain Points:**
+
 - Docs always out of date
 - Writing docs is boring
 - Explaining same things repeatedly
 - No time for docs during sprints
 
-**Quote:** *"I'd rather write code than write about code."*
+**Quote:** _"I'd rather write code than write about code."_
 
 ---
 
 #### Persona 2: Lisa - Engineering Manager
 
 **Demographics:**
+
 - Title: Engineering Manager
 - Team Size: 10-20 engineers
 - Focus: Onboarding, knowledge sharing
 
 **Goals:**
+
 - Faster new hire onboarding
 - Reduce knowledge silos
 - Scale team without scaling questions
 
 **Pain Points:**
+
 - New hires take months to be productive
 - Senior engineers interrupted for questions
 - Knowledge leaves with departing employees
 
-**Quote:** *"Every time someone leaves, we lose knowledge we'll never recover."*
+**Quote:** _"Every time someone leaves, we lose knowledge we'll never recover."_
 
 ---
 
 #### Persona 3: Alex - Developer Advocate
 
 **Demographics:**
+
 - Title: Developer Advocate / DevRel
 - Focus: External documentation, tutorials
 - Audience: External developers using API
 
 **Goals:**
+
 - Keep API docs current
 - Create great developer experience
 - Reduce support tickets
 
 **Pain Points:**
+
 - API changes but docs don't
 - Writing tutorials is time-consuming
 - Developers complain about docs
 
-**Quote:** *"Half my support tickets are answered by pointing to existing docs—if only developers could find them."*
+**Quote:** _"Half my support tickets are answered by pointing to existing docs—if only developers could find them."_
 
 ---
 
 ### 4.2 Secondary Personas
 
 #### Persona 4: New Team Member
+
 - Just joined, needs to learn codebase
 - Relies heavily on documentation
 - Frustrated by outdated/missing docs
 
 #### Persona 5: Open Source Maintainer
+
 - Needs docs for contributors
 - Limited time for documentation
 - Wants to lower contribution barriers
@@ -266,15 +282,19 @@ To eliminate outdated documentation by automatically generating and maintaining 
 ### 5.3 Strategic Pillars
 
 #### Pillar 1: Automatic Generation
+
 Documentation created as code is written, not as a separate task.
 
 #### Pillar 2: Multi-Source Understanding
+
 Combine code, PRs, tickets, and discussions to understand intent.
 
 #### Pillar 3: Human Quality
+
 Generate documentation that reads naturally, not robotic.
 
 #### Pillar 4: Continuous Accuracy
+
 Update documentation automatically when code changes.
 
 ### 5.4 Product Principles
@@ -287,12 +307,14 @@ Update documentation automatically when code changes.
 ### 5.5 Success Criteria
 
 **Year 1:**
+
 - 5,000 active repositories
 - $1M ARR
 - 80% documentation freshness rate
 - 4.5+ star rating
 
 **Year 3:**
+
 - 50,000 active repositories
 - $15M ARR
 - Integration ecosystem
@@ -304,18 +326,18 @@ Update documentation automatically when code changes.
 
 ### 6.1 Feature Overview
 
-| Feature | Priority | Phase | Description |
-|---------|----------|-------|-------------|
-| Change Detection | P0 | MVP | Detect code changes via PRs |
-| Intent Inference | P0 | MVP | Understand "why" from context |
-| Doc Generation | P0 | MVP | Generate documentation |
-| Auto-Update | P0 | MVP | Update docs on code change |
-| API Docs | P1 | V1.1 | OpenAPI/Swagger generation |
-| README Generation | P0 | MVP | Project README creation |
-| Changelog | P1 | V1.1 | Automatic changelog entries |
-| Diagram Generation | P2 | V1.2 | Architecture diagrams |
-| Style Learning | P1 | V1.1 | Match team's writing style |
-| Multi-Language | P2 | V1.2 | i18n documentation |
+| Feature            | Priority | Phase | Description                   |
+| ------------------ | -------- | ----- | ----------------------------- |
+| Change Detection   | P0       | MVP   | Detect code changes via PRs   |
+| Intent Inference   | P0       | MVP   | Understand "why" from context |
+| Doc Generation     | P0       | MVP   | Generate documentation        |
+| Auto-Update        | P0       | MVP   | Update docs on code change    |
+| API Docs           | P1       | V1.1  | OpenAPI/Swagger generation    |
+| README Generation  | P0       | MVP   | Project README creation       |
+| Changelog          | P1       | V1.1  | Automatic changelog entries   |
+| Diagram Generation | P2       | V1.2  | Architecture diagrams         |
+| Style Learning     | P1       | V1.1  | Match team's writing style    |
+| Multi-Language     | P2       | V1.2  | i18n documentation            |
 
 ### 6.2 Functional Requirements
 
@@ -324,6 +346,7 @@ Update documentation automatically when code changes.
 **Description:** Detect and analyze code changes that require documentation updates.
 
 **Acceptance Criteria:**
+
 - Trigger on PR merge to main branch
 - Identify semantic changes (new features, API changes)
 - Distinguish documentation-worthy vs. trivial changes
@@ -336,28 +359,28 @@ class ChangeAnalyzer:
     async def analyze_pr(self, pr: PullRequest) -> ChangeAnalysis:
         # Parse diff
         diff = await pr.get_diff()
-        
+
         # Identify semantic changes
         changes = []
         for file in diff.files:
             if self.is_documentation_worthy(file):
                 change = await self.analyze_file_change(file)
                 changes.append(change)
-        
+
         return ChangeAnalysis(
             pr=pr,
             changes=changes,
             documentation_impact=self.assess_doc_impact(changes),
             priority=self.prioritize_changes(changes)
         )
-    
+
     def is_documentation_worthy(self, file: FileDiff) -> bool:
         # Skip auto-generated, test files, etc.
         if file.path.endswith('.test.ts'):
             return False
         if 'generated' in file.path:
             return False
-        
+
         # Include if contains significant changes
         return (
             file.has_new_exports or
@@ -374,6 +397,7 @@ class ChangeAnalyzer:
 **Description:** Understand the "why" behind code changes by synthesizing multiple sources.
 
 **Acceptance Criteria:**
+
 - Extract context from PR description
 - Link to related Jira/Linear tickets
 - Review PR comments and discussions
@@ -388,7 +412,7 @@ class IntentInferrer:
         self,
         change: ChangeAnalysis
     ) -> IntentContext:
-        
+
         # Create inference session
         session = await self.copilot.create_session({
             "model": "claude-sonnet-4.5",  # Best for understanding "why"
@@ -403,21 +427,21 @@ class IntentInferrer:
                 self.commit_analyzer
             ]
         })
-        
+
         context = await session.sendAndWait({
             "prompt": f"""
             Understand the intent and context behind this code change:
-            
+
             PR: {change.pr.title}
             Description: {change.pr.body}
             Files changed: {change.files}
-            
+
             Gather context from:
             1. PR description and comments
             2. Linked tickets (Jira/Linear)
             3. Commit messages
             4. Related Slack discussions
-            
+
             Determine:
             1. What user/business problem does this solve?
             2. Why was this approach chosen?
@@ -426,7 +450,7 @@ class IntentInferrer:
             5. What are the key concepts a reader should understand?
             """
         })
-        
+
         return IntentContext(
             business_purpose=context.business_purpose,
             technical_approach=context.technical_approach,
@@ -443,6 +467,7 @@ class IntentInferrer:
 **Description:** Generate human-quality documentation from code and context.
 
 **Acceptance Criteria:**
+
 - Generate multiple doc types (README, API, guides)
 - Match project's existing style
 - Include code examples
@@ -451,14 +476,14 @@ class IntentInferrer:
 
 **Documentation Types:**
 
-| Type | Generated From | Update Trigger |
-|------|----------------|----------------|
-| README | Project structure, main entry | Major changes |
-| API Reference | Function signatures, types | API changes |
-| Guides/Tutorials | Feature PRs, user stories | New features |
-| Architecture | Module structure, dependencies | Structural changes |
-| Changelog | PR descriptions, commits | Every release |
-| Inline Comments | Complex logic, algorithms | Logic changes |
+| Type             | Generated From                 | Update Trigger     |
+| ---------------- | ------------------------------ | ------------------ |
+| README           | Project structure, main entry  | Major changes      |
+| API Reference    | Function signatures, types     | API changes        |
+| Guides/Tutorials | Feature PRs, user stories      | New features       |
+| Architecture     | Module structure, dependencies | Structural changes |
+| Changelog        | PR descriptions, commits       | Every release      |
+| Inline Comments  | Complex logic, algorithms      | Logic changes      |
 
 **Generation Engine:**
 
@@ -469,7 +494,7 @@ class DocGenerator:
         change: ChangeAnalysis,
         intent: IntentContext
     ) -> GeneratedDocs:
-        
+
         # Create writing session
         writer = await self.copilot.create_session({
             "model": "gpt-5",
@@ -479,15 +504,15 @@ class DocGenerator:
                 self.diagram_generator
             ],
             "systemMessage": {
-                "content": f"""You are a senior technical writer creating 
+                "content": f"""You are a senior technical writer creating
                 documentation for a software project.
-                
+
                 Writing style guidelines:
                 {await self.get_style_guide(change.repo)}
-                
+
                 Existing terminology:
                 {await self.get_terminology(change.repo)}
-                
+
                 Write documentation that:
                 - Explains the "why" before the "how"
                 - Uses concrete examples
@@ -497,9 +522,9 @@ class DocGenerator:
                 """
             }
         })
-        
+
         docs = []
-        
+
         # Generate appropriate documentation for each change
         for c in change.changes:
             if c.type == 'new_api':
@@ -509,16 +534,16 @@ class DocGenerator:
             elif c.type == 'architecture_change':
                 doc = await self.generate_architecture_doc(writer, c, intent)
             docs.append(doc)
-        
+
         # Generate changelog entry
         changelog = await self.generate_changelog_entry(writer, change, intent)
         docs.append(changelog)
-        
+
         # Update README if needed
         if change.affects_readme:
             readme_update = await self.update_readme(writer, change, intent)
             docs.append(readme_update)
-        
+
         return GeneratedDocs(
             documents=docs,
             pr_for_review=self.create_docs_pr(docs)
@@ -532,6 +557,7 @@ class DocGenerator:
 **Description:** Keep documentation synchronized with code changes.
 
 **Acceptance Criteria:**
+
 - Detect when existing docs are affected
 - Update relevant sections only
 - Preserve manual additions
@@ -544,6 +570,7 @@ class DocGenerator:
 **Description:** Generate comprehensive API documentation.
 
 **Acceptance Criteria:**
+
 - Parse function signatures and types
 - Generate OpenAPI/Swagger specs
 - Create usage examples
@@ -557,6 +584,7 @@ class DocGenerator:
 **Description:** Automatically maintain changelog from PRs.
 
 **Acceptance Criteria:**
+
 - Extract notable changes from PRs
 - Categorize (features, fixes, breaking)
 - Follow Keep a Changelog format
@@ -568,18 +596,22 @@ class DocGenerator:
 ## [2.3.0] - 2026-01-28
 
 ### Added
-- **Payment Processing:** Added Stripe integration for checkout flow. 
-  Users can now pay with credit cards, Apple Pay, and Google Pay. 
+
+- **Payment Processing:** Added Stripe integration for checkout flow.
+  Users can now pay with credit cards, Apple Pay, and Google Pay.
   See [payment docs](./docs/payments.md) for integration guide.
-  
+
 ### Changed
+
 - **API:** `POST /checkout` now requires `payment_method` field.
   Existing integrations should update by March 1, 2026.
-  
+
 ### Fixed
+
 - Resolved race condition in cart updates (#1234)
 
 ### Security
+
 - Updated dependencies to address CVE-2026-1234
 ```
 
@@ -590,6 +622,7 @@ class DocGenerator:
 **Description:** Learn and maintain team's documentation style.
 
 **Acceptance Criteria:**
+
 - Analyze existing documentation
 - Extract style patterns
 - Enforce consistency
@@ -601,20 +634,20 @@ class DocGenerator:
 
 #### NFR-001: Quality
 
-| Metric | Requirement |
-|--------|-------------|
+| Metric         | Requirement                          |
+| -------------- | ------------------------------------ |
 | Human-Likeness | Indistinguishable from human-written |
-| Accuracy | 100% factually correct |
-| Completeness | Covers all documented changes |
-| Readability | Flesch reading score 40-60 |
+| Accuracy       | 100% factually correct               |
+| Completeness   | Covers all documented changes        |
+| Readability    | Flesch reading score 40-60           |
 
 #### NFR-002: Performance
 
-| Metric | Requirement |
-|--------|-------------|
-| Generation Time | <5 min for typical PR |
-| Update Latency | <1 hour from PR merge |
-| Freshness | 95% docs current within 24 hours |
+| Metric          | Requirement                      |
+| --------------- | -------------------------------- |
+| Generation Time | <5 min for typical PR            |
+| Update Latency  | <1 hour from PR merge            |
+| Freshness       | 95% docs current within 24 hours |
 
 ---
 
@@ -665,25 +698,25 @@ class DocSynthOrchestrator:
         # Phase 1: Analyze changes
         analyzer = await self.create_analyzer_agent()
         changes = await analyzer.analyze(pr)
-        
+
         if not changes.requires_documentation:
             return DocSynthResult(status="no_docs_needed")
-        
+
         # Phase 2: Gather context
         inferrer = await self.create_inferrer_agent()
         intent = await inferrer.infer(changes)
-        
+
         # Phase 3: Generate documentation
         writer = await self.create_writer_agent()
         docs = await writer.generate(changes, intent)
-        
+
         # Phase 4: Edit and polish
         editor = await self.create_editor_agent()
         polished = await editor.edit(docs)
-        
+
         # Phase 5: Create PR or direct commit
         result = await self.publish_docs(polished)
-        
+
         return DocSynthResult(
             status="success",
             documents=polished,
@@ -698,9 +731,10 @@ class DocSynthOrchestrator:
 ### 8.1 Epic: Automatic Documentation
 
 #### US-001: Generate Feature Docs
+
 **As a** developer  
 **I want** documentation auto-generated when I merge features  
-**So that** I don't have to write docs manually  
+**So that** I don't have to write docs manually
 
 ---
 
@@ -711,6 +745,7 @@ class DocSynthOrchestrator:
 **Context:** Developer adds new payment API endpoint.
 
 **Without DocSynth:**
+
 1. Developer merges PR
 2. Doc task added to backlog
 3. 3 sprints later, docs written
@@ -718,6 +753,7 @@ class DocSynthOrchestrator:
 5. Docs are already outdated
 
 **With DocSynth:**
+
 1. Developer merges PR
 2. DocSynth detects API change
 3. Pulls context from Jira ticket and PR
@@ -731,18 +767,18 @@ class DocSynthOrchestrator:
 
 ### 9.1 Generated Documentation Example
 
-```markdown
+````markdown
 # Payment Processing
 
 ## Overview
 
-The Payment module handles all checkout and payment operations, 
-supporting credit cards, Apple Pay, and Google Pay through our 
+The Payment module handles all checkout and payment operations,
+supporting credit cards, Apple Pay, and Google Pay through our
 Stripe integration.
 
-> **Why this approach?** We chose Stripe over building in-house 
-> payment processing to reduce PCI compliance scope and leverage 
-> Stripe's fraud detection. See [ADR-023](./adr/023-payment-provider.md) 
+> **Why this approach?** We chose Stripe over building in-house
+> payment processing to reduce PCI compliance scope and leverage
+> Stripe's fraud detection. See [ADR-023](./adr/023-payment-provider.md)
 > for the full decision record.
 
 ## Quick Start
@@ -751,12 +787,13 @@ Stripe integration.
 import { PaymentService } from '@acme/payments';
 
 const payment = await PaymentService.createPayment({
-  amount: 1999,  // in cents
+  amount: 1999, // in cents
   currency: 'usd',
   method: 'card',
-  cardToken: 'tok_visa'
+  cardToken: 'tok_visa',
 });
 ```
+````
 
 ## API Reference
 
@@ -766,20 +803,20 @@ Creates a new payment and charges the customer.
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| amount | number | Yes | Amount in cents |
-| currency | string | Yes | ISO currency code |
-| method | PaymentMethod | Yes | Payment method type |
+| Name     | Type          | Required | Description         |
+| -------- | ------------- | -------- | ------------------- |
+| amount   | number        | Yes      | Amount in cents     |
+| currency | string        | Yes      | ISO currency code   |
+| method   | PaymentMethod | Yes      | Payment method type |
 
 **Returns:** `Promise<Payment>`
 
 **Errors:**
 
-| Code | Description | Resolution |
-|------|-------------|------------|
-| INSUFFICIENT_FUNDS | Card declined | Try different card |
-| INVALID_CARD | Card number invalid | Verify card details |
+| Code               | Description         | Resolution          |
+| ------------------ | ------------------- | ------------------- |
+| INSUFFICIENT_FUNDS | Card declined       | Try different card  |
+| INVALID_CARD       | Card number invalid | Verify card details |
 
 **Example:**
 
@@ -789,7 +826,7 @@ try {
     amount: 1999,
     currency: 'usd',
     method: 'card',
-    cardToken: 'tok_visa'
+    cardToken: 'tok_visa',
   });
   console.log(`Payment ${payment.id} successful`);
 } catch (error) {
@@ -807,7 +844,7 @@ sequenceDiagram
     participant A as API
     participant P as PaymentService
     participant S as Stripe
-    
+
     C->>A: POST /checkout
     A->>P: createPayment()
     P->>S: Create PaymentIntent
@@ -817,7 +854,9 @@ sequenceDiagram
 ```
 
 ---
-*Generated by DocSynth from PR #1234 • Last updated: 2026-01-28*
+
+_Generated by DocSynth from PR #1234 • Last updated: 2026-01-28_
+
 ```
 
 ---
@@ -961,3 +1000,4 @@ sequenceDiagram
 ---
 
 *This PRD is a living document and will be updated as product development progresses.*
+```
