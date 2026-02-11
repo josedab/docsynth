@@ -1,0 +1,150 @@
+# =============================================================================
+# DocSynth Full-Stack Development Environment
+# Usage:
+#   ./scripts/setup.sh                          # First: creates .env with secrets
+#   docker compose -f docker-compose.dev.yml up  # Then: start all services
+#
+# IMPORTANT: Requires a .env file. Run ./scripts/setup.sh first to create one
+# with auto-generated secrets. Without it, containers will fail to start.
+#
+# Runs all services (PostgreSQL, Redis, API, Web, Worker) in containers.
+# No local Node.js installation required.
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: docsynth-dev-postgres
+    environment:
+      POSTGRES_USER: docsynth
+      POSTGRES_PASSWORD: docsynth_dev
+      POSTGRES_DB: docsynth
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U docsynth']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: docsynth-dev-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Database migrations (runs once, then exits)
+  db-setup:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: docsynth-dev-db-setup
+    command: sh -c "npm run db:generate && npm run db:push"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://docsynth:docsynth_dev@postgres:5432/docsynth
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: docsynth-dev-api
+    command: npm run dev -- --filter=@docsynth/api
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - '3001:3001'
+    env_file: .env
+    environment:
+      PORT: '3001'
+      DATABASE_URL: postgresql://docsynth:docsynth_dev@postgres:5432/docsynth
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: docsynth-dev-web
+    command: npm run dev -- --filter=@docsynth/web
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - '3000:3000'
+    env_file: .env
+    environment:
+      API_URL: http://api:3001
+    depends_on:
+      - api
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: docsynth-dev-worker
+    command: npm run dev -- --filter=@docsynth/worker
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://docsynth:docsynth_dev@postgres:5432/docsynth
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  # Optional debug tools
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: docsynth-dev-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - '8081:8081'
+    depends_on:
+      - redis
+    profiles:
+      - debug
+
+  adminer:
+    image: adminer:latest
+    container_name: docsynth-dev-adminer
+    ports:
+      - '8080:8080'
+    depends_on:
+      - postgres
+    profiles:
+      - debug
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  default:
+    name: docsynth-dev-network

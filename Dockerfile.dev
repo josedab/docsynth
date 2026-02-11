@@ -1,0 +1,36 @@
+# =============================================================================
+# DocSynth Development Dockerfile
+# Used by docker-compose.dev.yml for full-stack local development
+# =============================================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install build tools for native modules
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/
+COPY apps/worker/package.json apps/worker/
+COPY apps/web/package.json apps/web/
+COPY apps/cli/package.json apps/cli/
+COPY apps/mcp-server/package.json apps/mcp-server/
+COPY packages/types/package.json packages/types/
+COPY packages/config/package.json packages/config/
+COPY packages/database/package.json packages/database/
+COPY packages/github/package.json packages/github/
+COPY packages/queue/package.json packages/queue/
+COPY packages/utils/package.json packages/utils/
+
+# Install all dependencies (including dev)
+RUN npm install
+
+# Copy source (will be overridden by volume mount in docker-compose)
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate --schema=packages/database/prisma/schema.prisma
+
+EXPOSE 3000 3001
