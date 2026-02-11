@@ -59,6 +59,10 @@ export { CommandPalette, useCommandPalette } from './CommandPalette';
 // Quick Actions
 export { QuickActionsBar } from './QuickActionsBar';
 
+// Demo Mode
+export { DemoModeBanner } from './DemoModeBanner';
+export { GettingStartedCard } from './GettingStartedCard';
+
 // User
 export { UserBadges } from './UserBadges';
 

@@ -9,6 +9,7 @@ import { ActivityFeed } from '../../components/ActivityFeed';
 import { TrendStatCard } from '../../components/TrendStatCard';
 import { TeamLeaderboard } from '../../components/TeamLeaderboard';
 import { UsageWidget } from '../../components/UsageWidget';
+import { GettingStartedCard } from '../../components/GettingStartedCard';
 
 interface DashboardStats {
   totalRepos: number;
@@ -97,17 +98,24 @@ export default function DashboardPage() {
     <div>
       <h1 className="text-xl md:text-2xl font-bold mb-6 md:mb-8">Dashboard</h1>
 
+      {/* Getting Started Guide (demo mode only) */}
+      <GettingStartedCard
+        hasRepositories={(stats?.totalRepos ?? 0) > 0}
+        hasJobs={recentJobs.length > 0}
+        hasDocuments={(stats?.docsGenerated ?? 0) > 0}
+      />
+
       {/* Stats with Trends */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         <TrendStatCard title="Total Repositories" value={stats?.totalRepos ?? 0} />
         <TrendStatCard title="Active Repositories" value={stats?.activeRepos ?? 0} />
-        <TrendStatCard 
-          title="Generation Jobs" 
-          value={stats?.totalJobs ?? 0} 
+        <TrendStatCard
+          title="Generation Jobs"
+          value={stats?.totalJobs ?? 0}
           previousValue={stats?.previousPeriod?.totalJobs}
         />
-        <TrendStatCard 
-          title="Docs Generated" 
+        <TrendStatCard
+          title="Docs Generated"
           value={stats?.docsGenerated ?? 0}
           previousValue={stats?.previousPeriod?.docsGenerated}
         />
@@ -145,7 +153,9 @@ export default function DashboardPage() {
           {recentJobs.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <p>No generation jobs yet.</p>
-              <p className="text-sm mt-2">Jobs will appear here when PRs are merged to enabled repositories.</p>
+              <p className="text-sm mt-2">
+                Jobs will appear here when PRs are merged to enabled repositories.
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-80 overflow-y-auto">
@@ -180,9 +190,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            Add a Repository
-          </h3>
+          <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Add a Repository</h3>
           <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
             Enable documentation generation for your GitHub repositories.
           </p>
@@ -232,7 +240,9 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status] ?? 'bg-gray-100 text-gray-800'}`}>
+    <span
+      className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status] ?? 'bg-gray-100 text-gray-800'}`}
+    >
       {status}
     </span>
   );
