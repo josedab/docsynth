@@ -2,6 +2,7 @@ import { createLogger } from '@docsynth/utils';
 import { connectDatabase, disconnectDatabase } from '@docsynth/database';
 import { initializeRedis, closeAllQueues } from '@docsynth/queue';
 import { initializeGitHubApp } from '@docsynth/github';
+import { isDemoMode } from '@docsynth/config';
 
 import { startChangeAnalysisWorker } from './workers/change-analysis.js';
 import { startIntentInferenceWorker } from './workers/intent-inference.js';
@@ -31,15 +32,24 @@ import { startCoverageGateWorker } from './workers/coverage-gate.js';
 import { startComplianceAssessmentWorker } from './workers/compliance-assessment.js';
 // Follow-up feature workers
 import { startSelfHealingWorker, schedulePeriodicSelfHealing } from './workers/self-healing.js';
-import { startAnalyticsComputationWorker, scheduleDailyAnalytics } from './workers/analytics-computation.js';
-import { startLLMUsageAggregationWorker, scheduleHourlyLLMUsageAggregation } from './workers/llm-usage-aggregation.js';
+import {
+  startAnalyticsComputationWorker,
+  scheduleDailyAnalytics,
+} from './workers/analytics-computation.js';
+import {
+  startLLMUsageAggregationWorker,
+  scheduleHourlyLLMUsageAggregation,
+} from './workers/llm-usage-aggregation.js';
 import { startCommunityBadgeCheckWorker } from './workers/community-badge-check.js';
 import { startMigrationWorker } from './workers/migration.js';
 import { startDocImpactWorker, scheduleUnanalyzedPRs } from './workers/doc-impact.js';
 import { startPollingWorker, schedulePeriodicPolling } from './workers/polling.js';
 import { startNLEditorWorker } from './workers/nl-editor.js';
 import { startOrgGraphBuilderWorker } from './workers/org-graph-builder.js';
-import { startROIComputationWorker, scheduleWeeklyROIComputation } from './workers/roi-computation.js';
+import {
+  startROIComputationWorker,
+  scheduleWeeklyROIComputation,
+} from './workers/roi-computation.js';
 // Next-gen v2 feature workers
 import { startPRDocReviewWorker } from './workers/pr-doc-review.js';
 import { startFederatedHubWorker } from './workers/federated-hub.js';
@@ -74,14 +84,18 @@ async function start() {
     log.info('Connecting to Redis...');
     initializeRedis(process.env.REDIS_URL ?? 'redis://localhost:6379');
 
-    // Initialize GitHub App
-    log.info('Initializing GitHub App...');
-    initializeGitHubApp({
-      appId: process.env.GITHUB_APP_ID ?? '',
-      privateKey: process.env.GITHUB_APP_PRIVATE_KEY ?? '',
-      clientId: process.env.GITHUB_CLIENT_ID ?? '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
-    });
+    // Initialize GitHub App (skipped in demo mode)
+    if (isDemoMode()) {
+      log.info('Running in DEMO MODE — GitHub App initialization skipped');
+    } else {
+      log.info('Initializing GitHub App...');
+      initializeGitHubApp({
+        appId: process.env.GITHUB_APP_ID ?? '',
+        privateKey: process.env.GITHUB_APP_PRIVATE_KEY ?? '',
+        clientId: process.env.GITHUB_CLIENT_ID ?? '',
+        clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
+      });
+    }
 
     // Start workers
     log.info('Starting workers...');
