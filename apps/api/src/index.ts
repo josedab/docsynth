@@ -7,6 +7,7 @@ import { createLogger } from '@docsynth/utils';
 import { connectDatabase, disconnectDatabase } from '@docsynth/database';
 import { initializeRedis, closeAllQueues } from '@docsynth/queue';
 import { initializeGitHubApp } from '@docsynth/github';
+import { isDemoMode } from '@docsynth/config';
 
 // Route registry - organizes all routes in one place
 import { registerAllRoutes } from './routes/index.js';
@@ -60,14 +61,18 @@ async function start() {
     log.info('Connecting to Redis...');
     initializeRedis(process.env.REDIS_URL ?? 'redis://localhost:6379');
 
-    // Initialize GitHub App
-    log.info('Initializing GitHub App...');
-    initializeGitHubApp({
-      appId: process.env.GITHUB_APP_ID ?? '',
-      privateKey: process.env.GITHUB_APP_PRIVATE_KEY ?? '',
-      clientId: process.env.GITHUB_CLIENT_ID ?? '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
-    });
+    // Initialize GitHub App (skipped in demo mode)
+    if (isDemoMode()) {
+      log.info('Running in DEMO MODE — GitHub App initialization skipped');
+    } else {
+      log.info('Initializing GitHub App...');
+      initializeGitHubApp({
+        appId: process.env.GITHUB_APP_ID ?? '',
+        privateKey: process.env.GITHUB_APP_PRIVATE_KEY ?? '',
+        clientId: process.env.GITHUB_CLIENT_ID ?? '',
+        clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
+      });
+    }
 
     // Start server
     log.info({ port }, 'Starting API server...');
