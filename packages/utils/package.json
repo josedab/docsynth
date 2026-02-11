@@ -21,6 +21,7 @@
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist .turbo"
   },
