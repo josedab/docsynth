@@ -97,7 +97,14 @@ function diagnoseConfigErrors(issues: z.ZodIssue[]): ConfigHint[] {
         return {
           field,
           message: 'Still has placeholder value from .env.example',
-          hint: 'Generate with: openssl rand -hex 32',
+          hint: 'Generate with: openssl rand -hex 32\n      Or run: npm run quickstart (auto-generates secrets)',
+        };
+      }
+      if (!envValues[field]) {
+        return {
+          field,
+          message: 'Missing from .env',
+          hint: 'Generate with: openssl rand -hex 32\n      Or run: ./scripts/setup.sh (creates .env with secrets)',
         };
       }
       return {
@@ -111,22 +118,30 @@ function diagnoseConfigErrors(issues: z.ZodIssue[]): ConfigHint[] {
       if (!envValues.DATABASE_URL) {
         return {
           field,
-          message: 'Missing',
-          hint: 'Add to .env: DATABASE_URL=postgresql://docsynth:docsynth_dev@localhost:5432/docsynth',
+          message: 'Missing from .env',
+          hint: 'Add to .env: DATABASE_URL=postgresql://docsynth:docsynth_dev@localhost:5432/docsynth\n      Then run: docker compose up -d postgres',
         };
       }
       return {
         field,
         message,
-        hint: 'Ensure PostgreSQL is running: docker compose up -d postgres',
+        hint: 'Expected format: postgresql://user:pass@host:port/db\n      Default for Docker: postgresql://docsynth:docsynth_dev@localhost:5432/docsynth\n      Ensure PostgreSQL is running: docker compose up -d postgres',
       };
     }
 
     if (field === 'REDIS_URL') {
       if (!envValues.REDIS_URL) {
-        return { field, message: 'Missing', hint: 'Add to .env: REDIS_URL=redis://localhost:6379' };
+        return {
+          field,
+          message: 'Missing from .env',
+          hint: 'Add to .env: REDIS_URL=redis://localhost:6379\n      Then run: docker compose up -d redis',
+        };
       }
-      return { field, message, hint: 'Ensure Redis is running: docker compose up -d redis' };
+      return {
+        field,
+        message,
+        hint: 'Expected format: redis://host:port\n      Ensure Redis is running: docker compose up -d redis',
+      };
     }
 
     if (field === 'GITHUB_APP_ID') {
@@ -135,13 +150,29 @@ function diagnoseConfigErrors(issues: z.ZodIssue[]): ConfigHint[] {
         return {
           field,
           message: 'GitHub App not configured and DEMO_MODE is not enabled',
-          hint: 'Quick fix: Add DEMO_MODE=true to .env  (or configure GitHub App credentials)',
+          hint: 'Quick fix: Add DEMO_MODE=true to .env  (skips GitHub App requirement)\n      Or configure a GitHub App: https://docsynth.dev/docs/getting-started/github-app-setup',
         };
       }
       return {
         field,
         message,
-        hint: 'Set DEMO_MODE=true in .env or configure GitHub App credentials',
+        hint: 'Set DEMO_MODE=true in .env to skip, or configure GitHub App credentials',
+      };
+    }
+
+    if (field === 'NODE_ENV') {
+      return {
+        field,
+        message,
+        hint: 'Valid values: development, test, production',
+      };
+    }
+
+    if (field === 'LOG_LEVEL') {
+      return {
+        field,
+        message,
+        hint: 'Valid values: debug, info, warn, error',
       };
     }
 
@@ -171,8 +202,8 @@ export function getEnvConfig(): EnvConfig {
       }
     }
 
-    console.error('  Run "npm run doctor" to check your environment.');
-    console.error('  Or run "./scripts/setup.sh" for guided setup.\n');
+    console.error('  Run "npm run doctor" to diagnose your environment.');
+    console.error('  Run "npm run quickstart" to auto-fix common issues.\n');
     throw new Error('Invalid environment configuration');
   }
 
