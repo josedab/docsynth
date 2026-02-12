@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docsynth.dev/schema/config.json",
+  "version": 1,
+  "_comment": "DocSynth config for Go module projects",
+  "triggers": {
+    "onPRMerge": true,
+    "branches": ["main"]
+  },
+  "filters": {
+    "includePaths": ["**/*.go", "cmd/**/*", "pkg/**/*", "internal/**/*"],
+    "excludePaths": ["**/*_test.go", "**/testdata/**", "**/vendor/**", "**/mock_*.go"]
+  },
+  "docTypes": {
+    "readme": true,
+    "apiDocs": true,
+    "changelog": true,
+    "guides": false,
+    "diagrams": true
+  },
+  "style": {
+    "tone": "technical",
+    "includeExamples": true,
+    "includeApiReference": true
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docsynth.dev/schema/config.json",
+  "version": 1,
+  "_comment": "DocSynth config for Python FastAPI projects",
+  "triggers": {
+    "onPRMerge": true,
+    "branches": ["main", "develop"]
+  },
+  "filters": {
+    "includePaths": ["app/**/*.py", "src/**/*.py", "lib/**/*.py"],
+    "excludePaths": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/tests/**",
+      "**/conftest.py",
+      "**/__pycache__/**",
+      "**/venv/**",
+      "**/.venv/**"
+    ]
+  },
+  "docTypes": {
+    "readme": true,
+    "apiDocs": true,
+    "changelog": true,
+    "guides": true,
+    "diagrams": false
+  },
+  "style": {
+    "tone": "technical",
+    "includeExamples": true,
+    "includeApiReference": true
+  }
+}

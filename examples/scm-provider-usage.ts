@@ -5,7 +5,11 @@
  * to work with GitHub, GitLab, and Bitbucket repositories.
  */
 
-import { createSCMProvider, detectProvider, parseRepoUrl } from '../apps/api/src/services/scm-provider-factory.js';
+import {
+  createSCMProvider,
+  detectProvider,
+  parseRepoUrl,
+} from '../apps/api/src/services/scm-provider-factory.js';
 
 // ============================================================================
 // Example 1: Detecting Provider from Repository URL
@@ -93,12 +97,7 @@ async function gitlabExample() {
   console.log(`Open MRs: ${openMRs.length}`);
 
   // Get file content
-  const fileContent = await gitlab.getFileContent(
-    'gitlab-org',
-    'gitlab',
-    'README.md',
-    'main'
-  );
+  const fileContent = await gitlab.getFileContent('gitlab-org', 'gitlab', 'README.md', 'main');
   console.log(`File: ${fileContent.path}`);
   console.log(`SHA: ${fileContent.sha}`);
   console.log(`Content length: ${fileContent.content.length} bytes`);
@@ -202,14 +201,19 @@ async function providerAgnosticExample(providerType: 'github' | 'gitlab' | 'bitb
 async function webhookExample() {
   const github = createSCMProvider('github', { installationId: 12345 });
   const gitlab = createSCMProvider('gitlab', { token: 'glpat-xxx' });
-  const bitbucket = createSCMProvider('bitbucket', {
+  createSCMProvider('bitbucket', {
     username: 'user',
     appPassword: 'pass',
   });
 
   // Parse webhook payloads
   const githubHeaders = { 'x-github-event': 'pull_request' };
-  const githubPayload = { action: 'opened', repository: { /* ... */ } };
+  const githubPayload = {
+    action: 'opened',
+    repository: {
+      /* ... */
+    },
+  };
   const githubEvent = github.parseWebhookPayload(githubHeaders, githubPayload);
 
   if (githubEvent) {
@@ -229,11 +233,7 @@ async function webhookExample() {
   );
   console.log(`GitHub signature valid: ${isValidGitHub}`);
 
-  const isValidGitLab = gitlab.verifyWebhookSignature(
-    { 'x-gitlab-token': secret },
-    body,
-    secret
-  );
+  const isValidGitLab = gitlab.verifyWebhookSignature({ 'x-gitlab-token': secret }, body, secret);
   console.log(`GitLab signature valid: ${isValidGitLab}`);
 }
 
@@ -266,27 +266,27 @@ async function main() {
   console.log('1. Detecting Providers:');
   await detectProviderExample();
 
-  console.log('\n2. GitHub Example:');
-  // await githubExample(); // Uncomment to run
+  // The following examples require real SCM credentials. Uncomment to run.
+  // console.log('\n2. GitHub Example:');
+  // await githubExample();
 
-  console.log('\n3. GitLab Example:');
-  // await gitlabExample(); // Uncomment to run
+  // console.log('\n3. GitLab Example:');
+  // await gitlabExample();
 
-  console.log('\n4. Bitbucket Example:');
-  // await bitbucketExample(); // Uncomment to run
+  // console.log('\n4. Bitbucket Example:');
+  // await bitbucketExample();
 
-  console.log('\n5. Provider-Agnostic Example:');
-  // await providerAgnosticExample('github'); // Uncomment to run
+  // console.log('\n5. Provider-Agnostic Example:');
+  // await providerAgnosticExample('github');
 
-  console.log('\n6. Webhook Example:');
-  await webhookExample();
+  // console.log('\n6. Webhook Example:');
+  // await webhookExample();
 
-  console.log('\n7. Self-Hosted GitLab Example:');
-  // await selfHostedGitLabExample(); // Uncomment to run
+  // console.log('\n7. Self-Hosted GitLab Example:');
+  // await selfHostedGitLabExample();
 }
 
-// Uncomment to run examples
-// main().catch(console.error);
+main().catch(console.error);
 
 export {
   detectProviderExample,
