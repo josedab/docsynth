@@ -5,20 +5,35 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "website"
   ],
   "scripts": {
+    "preinstall": "node -e \"if(+process.versions.node.split('.')[0]<20){console.error('\\n❌ Node.js 20+ required (found '+process.version+').\\n   If using nvm: nvm use\\n   Otherwise: https://nodejs.org\\n');process.exit(1)}\"",
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev:api": "turbo dev --filter=@docsynth/api",
+    "dev:web": "turbo dev --filter=@docsynth/web",
+    "dev:worker": "turbo dev --filter=@docsynth/worker",
     "lint": "turbo lint",
     "test": "turbo test",
+    "test:unit": "turbo test:unit",
+    "test:integration": "bash scripts/test-integration.sh",
+    "test:watch": "vitest --workspace vitest.workspace.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules",
     "db:generate": "turbo db:generate",
     "db:push": "turbo db:push",
-    "db:migrate": "turbo db:migrate"
+    "db:migrate": "turbo db:migrate",
+    "db:seed": "tsx packages/database/prisma/seed.ts",
+    "setup": "bash scripts/setup.sh",
+    "quickstart": "bash scripts/quickstart.sh",
+    "doctor": "bash scripts/doctor.sh",
+    "docs": "npm run --workspace=website start",
+    "docs:build": "npm run --workspace=website build",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -28,7 +43,10 @@
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.2",
     "globals": "^17.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.2.4",
+    "tsx": "^4.7.0",
     "turbo": "^2.0.0",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.54.0",
@@ -38,6 +56,15 @@
     "node": ">=20.0.0"
   },
   "packageManager": "npm@10.2.0",
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
   "dependencies": {
     "next": "16.1.6"
   }
