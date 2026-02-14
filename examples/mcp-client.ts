@@ -5,8 +5,9 @@
  * and uses its tools, resources, and prompts.
  *
  * Prerequisites:
- *   1. Build the project: npm run build
- *   2. Start the API server: npm run dev
+ *   1. Install dependencies: npm install
+ *   2. Build the project:    npm run build
+ *   3. Start the API server: npm run dev
  *
  * Run: npx tsx examples/mcp-client.ts
  */

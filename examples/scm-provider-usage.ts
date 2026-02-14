@@ -1,8 +1,17 @@
 /**
  * SCM Provider Usage Examples
  *
- * This file demonstrates how to use the multi-SCM provider abstraction layer
+ * Demonstrates how to use the multi-SCM provider abstraction layer
  * to work with GitHub, GitLab, and Bitbucket repositories.
+ *
+ * Prerequisites:
+ *   - Project dependencies installed: npm install
+ *   - No running services needed (provider detection runs locally)
+ *
+ * Run: npx tsx examples/scm-provider-usage.ts
+ *
+ * Note: This imports directly from the API app source. The SCM provider factory
+ * is an internal API module — in production, use the REST API endpoints instead.
  */
 
 import {

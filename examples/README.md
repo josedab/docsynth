@@ -2,14 +2,25 @@
 
 Runnable examples demonstrating how to interact with DocSynth programmatically.
 
-## Prerequisites
-
-All examples require the development environment to be running:
+## Quick Try (No Server Required)
 
 ```bash
-./scripts/setup.sh   # First-time setup
-npm run dev           # Start all services
+# See the API example with mock data (no running services needed)
+DEMO=true npx tsx examples/api-usage.ts
+
+# See the SCM provider detection (no credentials needed)
+npx tsx examples/scm-provider-usage.ts
 ```
+
+## Full Examples (Requires Running Services)
+
+Start the development environment first:
+
+```bash
+npm run quickstart   # One-command setup + start
+```
+
+Then in a separate terminal:
 
 ## Examples
 
