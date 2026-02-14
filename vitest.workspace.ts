@@ -9,4 +9,6 @@ export default defineWorkspace([
   'apps/api',
   'apps/worker',
   'apps/mcp-server',
+  'apps/cli',
+  'apps/web',
 ]);
