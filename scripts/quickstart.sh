@@ -90,9 +90,17 @@ else
   ok ".env exists"
 
   if grep -q "CHANGE_ME" .env 2>/dev/null; then
-    fail "SESSION_SECRET or JWT_SECRET still has placeholder value"
-    echo -e "    Run: ${BOLD}./scripts/setup.sh${NC} to auto-generate secrets"
-    ERRORS=$((ERRORS + 1))
+    warn "SESSION_SECRET or JWT_SECRET has placeholder value — auto-generating..."
+    SESSION_SECRET=$(openssl rand -hex 32)
+    JWT_SECRET=$(openssl rand -hex 32)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s|SESSION_SECRET=.*|SESSION_SECRET=${SESSION_SECRET}|" .env
+      sed -i '' "s|JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" .env
+    else
+      sed -i "s|SESSION_SECRET=.*|SESSION_SECRET=${SESSION_SECRET}|" .env
+      sed -i "s|JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" .env
+    fi
+    ok "Auto-generated SESSION_SECRET and JWT_SECRET"
   else
     ok "Secrets configured"
   fi
@@ -152,15 +160,49 @@ fi
 echo ""
 info "Starting development servers..."
 echo ""
-echo "  ┌──────────────────────────────────────────┐"
-echo "  │  Web Dashboard:  http://localhost:3000    │"
-echo "  │  API Server:     http://localhost:3001    │"
-echo "  │  API Docs:       http://localhost:3001/docs│"
-echo "  │                                          │"
-echo "  │  Stop:           Ctrl+C                  │"
-echo "  │  Run tests:      npm run test:unit       │"
-echo "  │  All commands:   make                    │"
-echo "  └──────────────────────────────────────────┘"
+
+# Start dev servers in the background so we can wait for readiness
+npm run dev &
+DEV_PID=$!
+
+# Wait for API server to be ready
+echo -n "  Waiting for services to start"
+RETRIES=60
+API_READY=false
+until curl -s -o /dev/null --max-time 2 http://localhost:3001/health 2>/dev/null; do
+  echo -n "."
+  RETRIES=$((RETRIES - 1))
+  if [ $RETRIES -le 0 ]; then
+    echo ""
+    warn "Timed out waiting for API. Services may still be starting."
+    break
+  fi
+  sleep 2
+done
+
+if curl -s -o /dev/null --max-time 2 http://localhost:3001/health 2>/dev/null; then
+  API_READY=true
+fi
+echo ""
 echo ""
 
-exec npm run dev
+if [ "$API_READY" = true ]; then
+  echo -e "${GREEN}${BOLD}  ✓ DocSynth is ready!${NC}"
+else
+  echo -e "${YELLOW}${BOLD}  ⏳ DocSynth is starting...${NC}"
+fi
+echo ""
+echo "  ┌───────────────────────────────────────────────┐"
+echo "  │  Web Dashboard:  http://localhost:3000         │"
+echo "  │  API Server:     http://localhost:3001         │"
+echo "  │  API Docs:       http://localhost:3001/docs    │"
+echo "  │                                               │"
+echo "  │  Verify:         npm run verify               │"
+echo "  │  Run tests:      npm run test:unit            │"
+echo "  │  All commands:   make                         │"
+echo "  │  Stop:           Ctrl+C                       │"
+echo "  └───────────────────────────────────────────────┘"
+echo ""
+
+# Bring dev servers back to foreground
+wait $DEV_PID

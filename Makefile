@@ -2,7 +2,7 @@
 
 .PHONY: help setup dev dev-api dev-web dev-worker test test-unit test-watch lint typecheck format build \
         db-generate db-push db-seed db-studio \
-        docker-up docker-down docker-full doctor clean docs
+        docker-up docker-down docker-full doctor verify clean docs
 
 help: ## Show available commands
 	@echo ""
@@ -98,3 +98,6 @@ docs: ## Start documentation site locally
 
 doctor: ## Check environment health
 	npm run doctor
+
+verify: ## Smoke-test the running development environment
+	npm run verify

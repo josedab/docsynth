@@ -11,7 +11,7 @@
   "scripts": {
     "preinstall": "node -e \"if(+process.versions.node.split('.')[0]<20){console.error('\\n❌ Node.js 20+ required (found '+process.version+').\\n   If using nvm: nvm use\\n   Otherwise: https://nodejs.org\\n');process.exit(1)}\"",
     "build": "turbo build",
-    "dev": "turbo dev",
+    "dev": "turbo dev --log-prefix=name",
     "dev:api": "turbo dev --filter=@docsynth/api",
     "dev:web": "turbo dev --filter=@docsynth/web",
     "dev:worker": "turbo dev --filter=@docsynth/worker",
@@ -31,6 +31,7 @@
     "setup": "bash scripts/setup.sh",
     "quickstart": "bash scripts/quickstart.sh",
     "doctor": "bash scripts/doctor.sh",
+    "verify": "bash scripts/verify.sh",
     "docs": "npm run --workspace=website start",
     "docs:build": "npm run --workspace=website build",
     "prepare": "husky"
