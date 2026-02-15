@@ -11,6 +11,7 @@ datasource db {
 // Organization & Users
 // ============================================================================
 
+/// Top-level tenant representing a GitHub organization or team.
 model Organization {
   id               String           @id @default(cuid())
   name             String
@@ -41,6 +42,7 @@ enum SubscriptionTier {
   ENTERPRISE
 }
 
+/// A user account linked to a GitHub identity.
 model User {
   id             String   @id @default(cuid())
   githubUserId   Int      @unique @map("github_user_id")
@@ -66,6 +68,7 @@ enum UserRole {
   VIEWER
 }
 
+/// Tracks which organization a user belongs to and their role.
 model Membership {
   id             String   @id @default(cuid())
   userId         String   @map("user_id")
@@ -84,6 +87,7 @@ model Membership {
 // Repositories
 // ============================================================================
 
+/// A GitHub repository enabled for documentation generation.
 model Repository {
   id              String    @id @default(cuid())
   organizationId  String    @map("organization_id")
@@ -130,6 +134,7 @@ model Repository {
 // Documents
 // ============================================================================
 
+/// A generated or managed documentation file within a repository.
 model Document {
   id              String       @id @default(cuid())
   repositoryId    String       @map("repository_id")
@@ -167,6 +172,7 @@ enum DocumentType {
   INLINE_COMMENT
 }
 
+/// A versioned snapshot of a document's content over time.
 model DocVersion {
   id              String   @id @default(cuid())
   documentId      String   @map("document_id")
@@ -183,6 +189,7 @@ model DocVersion {
   @@map("doc_versions")
 }
 
+/// A reusable template defining structure for document generation.
 model DocTemplate {
   id             String       @id @default(cuid())
   organizationId String       @map("organization_id")
@@ -206,6 +213,7 @@ model DocTemplate {
 // PR Events & Webhooks
 // ============================================================================
 
+/// A recorded pull request event received from GitHub.
 model PREvent {
   id             String    @id @default(cuid())
   repositoryId   String    @map("repository_id")
@@ -235,6 +243,7 @@ enum PRAction {
   EDITED
 }
 
+/// Audit log entry for incoming GitHub webhook deliveries.
 model WebhookLog {
   id           String    @id @default(cuid())
   repositoryId String?   @map("repository_id")
@@ -256,6 +265,7 @@ model WebhookLog {
 // Change Analysis
 // ============================================================================
 
+/// AI analysis of code changes and their documentation impact.
 model ChangeAnalysis {
   id                    String         @id @default(cuid())
   prEventId             String         @unique @map("pr_event_id")
@@ -284,6 +294,7 @@ enum ChangePriority {
 // Intent Context
 // ============================================================================
 
+/// Inferred business purpose and technical context of a change.
 model IntentContext {
   id                     String   @id @default(cuid())
   changeAnalysisId       String   @unique @map("change_analysis_id")
@@ -305,6 +316,7 @@ model IntentContext {
 // Generation Jobs
 // ============================================================================
 
+/// A queued or completed documentation generation task.
 model GenerationJob {
   id               String    @id @default(cuid())
   changeAnalysisId String    @unique @map("change_analysis_id")
@@ -343,6 +355,7 @@ enum JobStatus {
 // Style Profiles
 // ============================================================================
 
+/// Repository-specific writing style patterns and terminology.
 model StyleProfile {
   id           String   @id @default(cuid())
   repositoryId String   @unique @map("repository_id")
@@ -361,6 +374,7 @@ model StyleProfile {
 // Subscriptions & Billing
 // ============================================================================
 
+/// Billing subscription tied to an organization.
 model Subscription {
   id                   String             @id @default(cuid())
   organizationId       String             @unique @map("organization_id")
@@ -386,6 +400,7 @@ enum SubscriptionStatus {
   UNPAID
 }
 
+/// Periodic usage metrics for a repository within an organization.
 model UsageRecord {
   id               String   @id @default(cuid())
   organizationId   String   @map("organization_id")
@@ -407,6 +422,7 @@ model UsageRecord {
 // Audit Logs
 // ============================================================================
 
+/// Record of user and system actions for compliance auditing.
 model AuditLog {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -431,6 +447,7 @@ model AuditLog {
 // API Keys
 // ============================================================================
 
+/// An API key issued to an organization for programmatic access.
 model ApiKey {
   id             String    @id @default(cuid())
   organizationId String    @map("organization_id")
@@ -451,6 +468,7 @@ model ApiKey {
 // Integrations
 // ============================================================================
 
+/// A third-party service integration for an organization.
 model Integration {
   id             String            @id @default(cuid())
   organizationId String            @map("organization_id")
@@ -478,6 +496,7 @@ enum IntegrationStatus {
 // Document Chunks & Embeddings (Feature 1: AI Documentation Chat)
 // ============================================================================
 
+/// An embedding-ready chunk of a document for vector search.
 model DocumentChunk {
   id           String   @id @default(cuid())
   documentId   String   @map("document_id")
@@ -497,6 +516,7 @@ model DocumentChunk {
   @@map("document_chunks")
 }
 
+/// User feedback on a chat message response.
 model ChatFeedback {
   id              String   @id @default(cuid())
   messageId       String   @map("message_id")
@@ -512,6 +532,7 @@ model ChatFeedback {
   @@map("chat_feedback")
 }
 
+/// Metadata about a repository's vector embedding index.
 model VectorIndexMeta {
   id             String   @id @default(cuid())
   repositoryId   String   @unique @map("repository_id")
@@ -532,6 +553,7 @@ model VectorIndexMeta {
 // Doc-to-Test Generation (Feature 2)
 // ============================================================================
 
+/// A code snippet extracted from documentation.
 model CodeExample {
   id             String   @id @default(cuid())
   documentId     String   @map("document_id")
@@ -551,6 +573,7 @@ model CodeExample {
   @@map("code_examples")
 }
 
+/// A testable assertion extracted from a code example.
 model ExtractedAssertion {
   id               String   @id @default(cuid())
   codeExampleId    String   @map("code_example_id")
@@ -566,6 +589,7 @@ model ExtractedAssertion {
   @@map("extracted_assertions")
 }
 
+/// A test case auto-generated from documented code examples.
 model GeneratedTest {
   id               String    @id @default(cuid())
   documentId       String    @map("document_id")
@@ -594,6 +618,7 @@ model GeneratedTest {
 // Doc Health Score History (Feature 1: Health Score Dashboard)
 // ============================================================================
 
+/// Point-in-time documentation health score for a repository.
 model HealthScoreSnapshot {
   id                  String   @id @default(cuid())
   repositoryId        String   @map("repository_id")
@@ -615,6 +640,7 @@ model HealthScoreSnapshot {
   @@map("health_score_snapshots")
 }
 
+/// An alert triggered by documentation health degradation.
 model HealthAlert {
   id             String    @id @default(cuid())
   organizationId String    @map("organization_id")
@@ -637,6 +663,7 @@ model HealthAlert {
   @@map("health_alerts")
 }
 
+/// Ranked documentation improvement scores for repositories.
 model TeamLeaderboard {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -664,6 +691,7 @@ model TeamLeaderboard {
 // Interactive Examples (Feature 2)
 // ============================================================================
 
+/// A runnable code example embedded in documentation.
 model InteractiveExample {
   id               String    @id @default(cuid())
   documentId       String    @map("document_id")
@@ -691,6 +719,7 @@ model InteractiveExample {
   @@map("interactive_examples")
 }
 
+/// A recorded execution run of an interactive code example.
 model ExampleExecution {
   id          String   @id @default(cuid())
   exampleId   String   @map("example_id")
@@ -712,6 +741,7 @@ model ExampleExecution {
 // Knowledge Graph (Feature 3)
 // ============================================================================
 
+/// A concept, function, or module in the knowledge graph.
 model KnowledgeEntity {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -735,6 +765,7 @@ model KnowledgeEntity {
   @@map("knowledge_entities")
 }
 
+/// A directed relationship between two knowledge entities.
 model KnowledgeRelation {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -755,6 +786,7 @@ model KnowledgeRelation {
   @@map("knowledge_relations")
 }
 
+/// Metadata and build status of a repository's knowledge graph.
 model KnowledgeGraphMeta {
   id              String   @id @default(cuid())
   repositoryId    String   @unique @map("repository_id")
@@ -774,6 +806,7 @@ model KnowledgeGraphMeta {
 // Doc Review Copilot (Feature 4)
 // ============================================================================
 
+/// An AI-powered review of documentation quality.
 model DocReview {
   id              String   @id @default(cuid())
   repositoryId    String   @map("repository_id")
@@ -802,6 +835,7 @@ model DocReview {
   @@map("doc_reviews")
 }
 
+/// A specific suggestion or issue found during a doc review.
 model DocReviewComment {
   id           String   @id @default(cuid())
   reviewId     String   @map("review_id")
@@ -822,6 +856,7 @@ model DocReviewComment {
   @@map("doc_review_comments")
 }
 
+/// A set of writing style rules for an organization.
 model StyleGuide {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -841,6 +876,7 @@ model StyleGuide {
 // Multi-Language Docs (Feature 5)
 // ============================================================================
 
+/// A translated version of a document in a target locale.
 model Translation {
   id           String   @id @default(cuid())
   documentId   String   @map("document_id")
@@ -865,6 +901,7 @@ model Translation {
   @@map("translations")
 }
 
+/// A term definition used for consistent translations.
 model Glossary {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -886,6 +923,7 @@ model Glossary {
 // Architecture Diagram Generator (Feature 6)
 // ============================================================================
 
+/// An auto-generated architecture diagram for a repository.
 model ArchitectureDiagram {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -911,6 +949,7 @@ model ArchitectureDiagram {
 // Onboarding Journey Builder (Feature 7)
 // ============================================================================
 
+/// A role-based onboarding path for new contributors.
 model OnboardingJourney {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -930,6 +969,7 @@ model OnboardingJourney {
   @@map("onboarding_journeys")
 }
 
+/// A user's progress through an onboarding journey.
 model OnboardingProgress {
   id          String    @id @default(cuid())
   journeyId   String    @map("journey_id")
@@ -951,6 +991,7 @@ model OnboardingProgress {
 // Doc Chatbot RAG (Feature 8)
 // ============================================================================
 
+/// A documentation chatbot conversation session.
 model ChatSession {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -967,6 +1008,7 @@ model ChatSession {
   @@map("chat_sessions")
 }
 
+/// A single message within a chat session.
 model ChatMessage {
   id          String   @id @default(cuid())
   sessionId   String   @map("session_id")
@@ -986,6 +1028,7 @@ model ChatMessage {
 // ADR Generator (Feature 9)
 // ============================================================================
 
+/// An Architecture Decision Record (ADR) for a repository.
 model ArchitectureDecision {
   id           String    @id @default(cuid())
   repositoryId String    @map("repository_id")
@@ -1014,6 +1057,7 @@ model ArchitectureDecision {
 // Slack/Teams Doc Bot (Feature 10)
 // ============================================================================
 
+/// A Slack or Teams bot conversation about documentation.
 model BotConversation {
   id          String   @id @default(cuid())
   platform    String   // slack, teams
@@ -1031,6 +1075,7 @@ model BotConversation {
   @@map("bot_conversations")
 }
 
+/// A notification sent to a messaging channel about doc changes.
 model DocAlert {
   id             String    @id @default(cuid())
   organizationId String    @map("organization_id")
@@ -1052,6 +1097,7 @@ model DocAlert {
 // QA Agent (Next-Gen Feature 1)
 // ============================================================================
 
+/// A quality assurance review session for generated documentation.
 model QASession {
   id              String    @id @default(cuid())
   repositoryId    String    @map("repository_id")
@@ -1076,6 +1122,7 @@ model QASession {
   @@map("qa_sessions")
 }
 
+/// A clarifying question raised during a QA session.
 model QAQuestion {
   id           String    @id @default(cuid())
   sessionId    String    @map("session_id")
@@ -1101,6 +1148,7 @@ model QAQuestion {
   @@map("qa_questions")
 }
 
+/// User feedback rating for a QA session.
 model QAFeedback {
   id           String   @id @default(cuid())
   sessionId    String   @map("session_id")
@@ -1120,6 +1168,7 @@ model QAFeedback {
 // Documentation Coverage (Next-Gen Feature 3)
 // ============================================================================
 
+/// A documentation coverage analysis for a commit.
 model CoverageReport {
   id              String   @id @default(cuid())
   repositoryId    String   @map("repository_id")
@@ -1143,6 +1192,7 @@ model CoverageReport {
   @@map("coverage_reports")
 }
 
+/// A rendered badge showing documentation coverage percentage.
 model CoverageBadge {
   id           String   @id @default(cuid())
   repositoryId String   @unique @map("repository_id")
@@ -1161,6 +1211,7 @@ model CoverageBadge {
 // Semantic Versioning (Next-Gen Feature 4)
 // ============================================================================
 
+/// Semantic version bump analysis for a pull request.
 model SemverAnalysis {
   id               String   @id @default(cuid())
   repositoryId     String   @map("repository_id")
@@ -1183,6 +1234,7 @@ model SemverAnalysis {
   @@map("semver_analyses")
 }
 
+/// A generated guide for migrating between versions.
 model MigrationGuide {
   id             String   @id @default(cuid())
   analysisId     String   @unique @map("analysis_id")
@@ -1205,6 +1257,7 @@ model MigrationGuide {
 // Multi-Repo Hub (Next-Gen Feature 6)
 // ============================================================================
 
+/// A multi-repo documentation portal for an organization.
 model DocumentationHub {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -1224,6 +1277,7 @@ model DocumentationHub {
   @@map("documentation_hubs")
 }
 
+/// A search query executed within a documentation hub.
 model HubSearch {
   id         String   @id @default(cuid())
   hubId      String   @map("hub_id")
@@ -1242,6 +1296,7 @@ model HubSearch {
 // Video Documentation (Next-Gen Feature 7)
 // ============================================================================
 
+/// A video documentation asset generated from written docs.
 model VideoDoc {
   id           String    @id @default(cuid())
   repositoryId String    @map("repository_id")
@@ -1271,6 +1326,7 @@ model VideoDoc {
 // Compliance Templates (Next-Gen Feature 8)
 // ============================================================================
 
+/// A regulatory compliance framework template.
 model ComplianceTemplate {
   id             String   @id @default(cuid())
   name           String   @unique
@@ -1289,6 +1345,7 @@ model ComplianceTemplate {
   @@map("compliance_templates")
 }
 
+/// A compliance scan report for a repository.
 model ComplianceReport {
   id              String    @id @default(cuid())
   organizationId  String    @map("organization_id")
@@ -1318,6 +1375,7 @@ model ComplianceReport {
 // Community Contribution (Next-Gen Feature 9)
 // ============================================================================
 
+/// Configuration for community documentation contributions.
 model CommunitySettings {
   id                  String   @id @default(cuid())
   repositoryId        String   @unique @map("repository_id")
@@ -1335,6 +1393,7 @@ model CommunitySettings {
   @@map("community_settings")
 }
 
+/// A community-submitted documentation change.
 model CommunityContribution {
   id              String    @id @default(cuid())
   repositoryId    String    @map("repository_id")
@@ -1361,6 +1420,7 @@ model CommunityContribution {
   @@map("community_contributions")
 }
 
+/// Reputation score and level for a community contributor.
 model ContributorReputation {
   id              String   @id @default(cuid())
   userId          String   @unique @map("user_id")
@@ -1382,6 +1442,7 @@ model ContributorReputation {
 // Documentation Analytics (Next-Gen Feature 10)
 // ============================================================================
 
+/// A page view event for documentation analytics.
 model DocPageView {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -1402,6 +1463,7 @@ model DocPageView {
   @@map("doc_page_views")
 }
 
+/// A search query logged for documentation analytics.
 model DocSearchQuery {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -1418,6 +1480,7 @@ model DocSearchQuery {
   @@map("doc_search_queries")
 }
 
+/// User feedback on whether a document page was helpful.
 model DocFeedback {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -1435,6 +1498,7 @@ model DocFeedback {
   @@map("doc_feedback")
 }
 
+/// Aggregated documentation analytics for a time period.
 model AnalyticsSummary {
   id               String   @id @default(cuid())
   repositoryId     String   @map("repository_id")
@@ -1462,6 +1526,7 @@ model AnalyticsSummary {
 // Drift Prediction (Feature: Proactive Documentation Drift Detection)
 // ============================================================================
 
+/// A proactive prediction of documentation drift risk.
 model DriftPrediction {
   id                 String   @id @default(cuid())
   repositoryId       String   @map("repository_id")
@@ -1504,6 +1569,7 @@ model DriftPrediction {
 // Onboarding Paths (Feature: Personalized Developer Onboarding)
 // ============================================================================
 
+/// A personalized onboarding path for a developer role.
 model OnboardingPath {
   id             String   @id @default(cuid())
   repositoryId   String   @map("repository_id")
@@ -1524,6 +1590,7 @@ model OnboardingPath {
   @@map("onboarding_paths")
 }
 
+/// A single step within an onboarding path.
 model OnboardingStep {
   id             String   @id @default(cuid())
   pathId         String   @map("path_id")
@@ -1543,6 +1610,7 @@ model OnboardingStep {
   @@map("onboarding_steps")
 }
 
+/// A user's progress through an onboarding path.
 model OnboardingPathProgress {
   id             String    @id @default(cuid())
   pathId         String    @map("path_id")
@@ -1565,6 +1633,7 @@ model OnboardingPathProgress {
 // Collaborative Reviews (Feature: Review Workflows)
 // ============================================================================
 
+/// A request for collaborative review of a document.
 model DocReviewRequest {
   id             String    @id @default(cuid())
   repositoryId   String    @map("repository_id")
@@ -1587,6 +1656,7 @@ model DocReviewRequest {
   @@map("doc_review_requests")
 }
 
+/// A reviewer assignment for a doc review request.
 model ReviewAssignment {
   id             String    @id @default(cuid())
   reviewRequestId String   @map("review_request_id")
@@ -1602,6 +1672,7 @@ model ReviewAssignment {
   @@map("review_assignments")
 }
 
+/// A comment left on a document during collaborative review.
 model ReviewComment {
   id              String   @id @default(cuid())
   reviewRequestId String   @map("review_request_id")
@@ -1626,6 +1697,7 @@ model ReviewComment {
 // Interactive Playgrounds (Feature: Runnable Code Sandboxes)
 // ============================================================================
 
+/// A runnable code sandbox linked to documentation.
 model Playground {
   id             String   @id @default(cuid())
   repositoryId   String   @map("repository_id")
@@ -1653,6 +1725,7 @@ model Playground {
   @@map("playgrounds")
 }
 
+/// An active user session within a code playground.
 model PlaygroundSession {
   id             String   @id @default(cuid())
   playgroundId   String   @map("playground_id")
@@ -1678,6 +1751,7 @@ model PlaygroundSession {
 // Multi-Agent Documentation (Feature: Agent-based Doc Generation)
 // ============================================================================
 
+/// An orchestrated multi-agent documentation generation run.
 model AgentRun {
   id             String    @id @default(cuid())
   repositoryId   String    @map("repository_id")
@@ -1713,6 +1787,7 @@ model AgentRun {
   @@map("agent_runs")
 }
 
+/// A sub-task executed by a specific agent during a run.
 model AgentTask {
   id             String    @id @default(cuid())
   agentRunId     String    @map("agent_run_id")
@@ -1742,6 +1817,7 @@ model AgentTask {
 // Citation Index (Feature: Smart Search with Citations)
 // ============================================================================
 
+/// An indexed citation for smart search with source tracking.
 model CitationIndex {
   id             String   @id @default(cuid())
   repositoryId   String   @map("repository_id")
@@ -1770,6 +1846,7 @@ model CitationIndex {
 // AI Code Review Documentation (Feature: Review Knowledge Capture)
 // ============================================================================
 
+/// A pull request review discussion thread.
 model PRReviewThread {
   id              String    @id @default(cuid())
   repositoryId    String    @map("repository_id")
@@ -1792,6 +1869,7 @@ model PRReviewThread {
   @@map("pr_review_threads")
 }
 
+/// A single comment within a PR review thread.
 model PRReviewComment {
   id              String    @id @default(cuid())
   threadId        String    @map("thread_id")
@@ -1811,6 +1889,7 @@ model PRReviewComment {
   @@map("pr_review_comments")
 }
 
+/// AI-extracted decision rationale from a PR review thread.
 model ReviewRationale {
   id                    String    @id @default(cuid())
   threadId              String    @unique @map("thread_id")
@@ -1852,6 +1931,7 @@ model ReviewRationale {
   @@map("review_rationales")
 }
 
+/// A curated knowledge entry derived from review insights.
 model ReviewKnowledgeBase {
   id                    String    @id @default(cuid())
   repositoryId          String    @map("repository_id")
@@ -1883,6 +1963,7 @@ model ReviewKnowledgeBase {
 // Documentation Coverage CI/CD Gate (Feature: Coverage Enforcement)
 // ============================================================================
 
+/// CI/CD gate configuration for documentation coverage.
 model CoverageGateConfig {
   id                    String    @id @default(cuid())
   repositoryId          String    @unique @map("repository_id")
@@ -1912,6 +1993,7 @@ model CoverageGateConfig {
   @@map("coverage_gate_configs")
 }
 
+/// A GitHub check run result for documentation coverage.
 model CoverageCheckRun {
   id                    String    @id @default(cuid())
   repositoryId          String    @map("repository_id")
@@ -1949,6 +2031,7 @@ model CoverageCheckRun {
 // Enhanced Compliance Templates (Feature: Regulatory Framework Support)
 // ============================================================================
 
+/// A specific control within a compliance framework template.
 model ComplianceControl {
   id                    String    @id @default(cuid())
   templateId            String    @map("template_id")
@@ -1977,6 +2060,7 @@ model ComplianceControl {
   @@map("compliance_controls")
 }
 
+/// Assessment result of a compliance control for a report.
 model ComplianceControlAssessment {
   id                    String    @id @default(cuid())
   reportId              String    @map("report_id")
@@ -2016,6 +2100,7 @@ model ComplianceControlAssessment {
 // Community Discussions (Enhanced Community Features)
 // ============================================================================
 
+/// A community discussion thread about documentation.
 model CommunityDiscussion {
   id              String    @id @default(cuid())
   repositoryId    String    @map("repository_id")
@@ -2043,6 +2128,7 @@ model CommunityDiscussion {
   @@map("community_discussions")
 }
 
+/// A reply within a community discussion thread.
 model CommunityReply {
   id              String    @id @default(cuid())
   discussionId    String    @map("discussion_id")
@@ -2061,6 +2147,7 @@ model CommunityReply {
   @@map("community_replies")
 }
 
+/// A badge definition awarded to community contributors.
 model CommunityBadge {
   id              String   @id @default(cuid())
   name            String   @unique
@@ -2080,6 +2167,7 @@ model CommunityBadge {
   @@map("community_badges")
 }
 
+/// A badge awarded to a specific user.
 model BadgeAward {
   id              String   @id @default(cuid())
   badgeId         String   @map("badge_id")
@@ -2100,6 +2188,7 @@ model BadgeAward {
 // Video Documentation Enhanced (Chapters & Series)
 // ============================================================================
 
+/// A chapter marker within a video documentation asset.
 model VideoChapter {
   id              String   @id @default(cuid())
   videoDocId      String   @map("video_doc_id")
@@ -2115,6 +2204,7 @@ model VideoChapter {
   @@map("video_chapters")
 }
 
+/// An ordered collection of video documentation assets.
 model VideoSeries {
   id              String   @id @default(cuid())
   repositoryId    String   @map("repository_id")
@@ -2136,6 +2226,7 @@ model VideoSeries {
 // LLM Usage Monitoring (Observability)
 // ============================================================================
 
+/// A single LLM API call log for usage tracking.
 model LLMUsageLog {
   id              String   @id @default(cuid())
   organizationId  String   @map("organization_id")
@@ -2174,6 +2265,7 @@ model LLMUsageLog {
   @@map("llm_usage_logs")
 }
 
+/// Aggregated LLM usage metrics for a time period.
 model LLMUsageSummary {
   id              String   @id @default(cuid())
   organizationId  String   @map("organization_id")
@@ -2212,6 +2304,7 @@ model LLMUsageSummary {
 // Self-Healing Documentation Tracking
 // ============================================================================
 
+/// A self-healing run that auto-fixes stale documentation.
 model SelfHealingRun {
   id              String    @id @default(cuid())
   repositoryId    String    @map("repository_id")
@@ -2245,6 +2338,7 @@ model SelfHealingRun {
 // Migration (Feature 3: Smart Migration Engine)
 // ============================================================================
 
+/// A documentation migration job from an external source.
 model Migration {
   id               String    @id @default(cuid())
   source           String    // confluence, notion, gitbook, markdown, readme
@@ -2284,6 +2378,7 @@ model Migration {
 // Natural Language Doc Editing (Feature 8)
 // ============================================================================
 
+/// A natural language instruction-based document edit.
 model NLEdit {
   id              String    @id @default(cuid())
   documentId      String    @map("document_id")
@@ -2309,6 +2404,7 @@ model NLEdit {
   @@map("nl_edits")
 }
 
+/// A batch of natural language edits across a repository.
 model BatchNLEdit {
   id                String    @id @default(cuid())
   repositoryId      String    @map("repository_id")
@@ -2333,6 +2429,7 @@ model BatchNLEdit {
 // Doc Impact Analysis
 // ============================================================================
 
+/// Configuration for automatic doc impact analysis on PRs.
 model DocImpactConfig {
   id                    String     @id @default(cuid())
   repositoryId          String     @unique @map("repository_id")
@@ -2354,6 +2451,7 @@ model DocImpactConfig {
   @@map("doc_impact_configs")
 }
 
+/// Analysis of which docs are impacted by a pull request.
 model DocImpactAnalysis {
   id                    String     @id @default(cuid())
   repositoryId          String     @map("repository_id")
@@ -2392,6 +2490,7 @@ model DocImpactAnalysis {
 // Personalized Developer Onboarding Paths V2 (Feature 5)
 // ============================================================================
 
+/// V2 personalized onboarding path with module structure.
 model OnboardingPathV2 {
   id             String   @id @default(cuid())
   repositoryId   String   @map("repository_id")
@@ -2413,6 +2512,7 @@ model OnboardingPathV2 {
   @@map("onboarding_paths_v2")
 }
 
+/// A user's progress through a V2 onboarding path.
 model OnboardingProgressV2 {
   id                String   @id @default(cuid())
   userId            String   @map("user_id")
@@ -2437,6 +2537,7 @@ model OnboardingProgressV2 {
 // Next-Gen V2: Federated Documentation Hub
 // ============================================================================
 
+/// A federated documentation hub spanning multiple repos.
 model FederatedHub {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -2456,6 +2557,7 @@ model FederatedHub {
   @@map("federated_hubs")
 }
 
+/// Links a repository to a federated documentation hub.
 model FederatedHubRepository {
   id           String   @id @default(cuid())
   hubId        String   @map("hub_id")
@@ -2473,6 +2575,7 @@ model FederatedHubRepository {
 // Next-Gen V2: PR Documentation Reviews
 // ============================================================================
 
+/// An automated documentation review for a pull request.
 model PRDocReview {
   id             String   @id @default(cuid())
   repositoryId   String   @map("repository_id")
@@ -2493,6 +2596,7 @@ model PRDocReview {
 // Next-Gen V2: Collaborative Editing Sessions
 // ============================================================================
 
+/// A collaborative real-time document editing session.
 model EditingSession {
   id              String   @id @default(cuid())
   documentId      String   @map("document_id")
@@ -2512,6 +2616,7 @@ model EditingSession {
   @@map("editing_sessions")
 }
 
+/// A comment placed within a collaborative editing session.
 model EditingSessionComment {
   id        String    @id @default(cuid())
   sessionId String    @map("session_id")
@@ -2533,6 +2638,7 @@ model EditingSessionComment {
 // Next-Gen V2: API Changelogs & Breaking Change Alerts
 // ============================================================================
 
+/// An auto-generated API changelog between two refs.
 model APIChangelog {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -2548,6 +2654,7 @@ model APIChangelog {
   @@map("api_changelogs")
 }
 
+/// A subscriber to breaking change notifications.
 model BreakingChangeSubscriber {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -2565,6 +2672,7 @@ model BreakingChangeSubscriber {
 // Next-Gen V2: Executive Reports
 // ============================================================================
 
+/// A periodic executive summary report for an organization.
 model ExecutiveReport {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -2580,6 +2688,7 @@ model ExecutiveReport {
   @@map("executive_reports")
 }
 
+/// A schedule for recurring executive report generation.
 model ReportSchedule {
   id             String   @id @default(cuid())
   organizationId String   @map("organization_id")
@@ -2599,6 +2708,7 @@ model ReportSchedule {
 // Next-Gen V2: SDK Documentation
 // ============================================================================
 
+/// Auto-generated SDK documentation for a specific language.
 model SDKDoc {
   id           String   @id @default(cuid())
   repositoryId String   @map("repository_id")
@@ -2616,5 +2726,403 @@ model SDKDoc {
   @@unique([repositoryId, language])
   @@index([repositoryId])
   @@map("sdk_docs")
+}
+
+// ============================================================================
+// Next-Gen V3: Smart Documentation Diff Viewer
+// ============================================================================
+
+/// A smart diff view linking code changes to doc changes.
+model SmartDiff {
+  id               String   @id @default(cuid())
+  repositoryId     String   @map("repository_id")
+  prNumber         Int      @map("pr_number")
+  codeDiffSummary  String   @db.Text @map("code_diff_summary")
+  docDiffSections  Json     @default("[]") @map("doc_diff_sections")
+  approvalStatus   String   @default("pending") @map("approval_status")
+  metadata         Json     @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([repositoryId, prNumber])
+  @@map("smart_diffs")
+}
+
+/// A comment on a specific section of a smart diff.
+model DiffComment {
+  id            String   @id @default(cuid())
+  smartDiffId   String   @map("smart_diff_id")
+  sectionId     String   @map("section_id")
+  author        String
+  content       String   @db.Text
+  parentId      String?  @map("parent_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([smartDiffId])
+  @@index([sectionId])
+  @@map("diff_comments")
+}
+
+// ============================================================================
+// Next-Gen V3: Documentation Quality Score
+// ============================================================================
+
+/// A multi-dimensional quality score for a document.
+model DocQualityScore {
+  id              String   @id @default(cuid())
+  documentId      String   @map("document_id")
+  repositoryId    String   @map("repository_id")
+  overallScore    Float    @map("overall_score")
+  dimensions      Json     @default("[]")
+  badge           String   @default("bronze")
+  recommendations Json     @default("[]")
+  scoredAt        DateTime @default(now()) @map("scored_at")
+
+  @@index([repositoryId])
+  @@index([documentId])
+  @@index([repositoryId, scoredAt])
+  @@map("doc_quality_scores")
+}
+
+/// A ranked quality leaderboard for repos, teams, or users.
+model QualityLeaderboard {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  repositoryId   String   @map("repository_id")
+  entityType     String   @map("entity_type") // repo, team, user
+  entityId       String   @map("entity_id")
+  entityName     String   @map("entity_name")
+  avgScore       Float    @map("avg_score")
+  docsScored     Int      @default(0) @map("docs_scored")
+  badges         Json     @default("{}")
+  period         String
+  computedAt     DateTime @default(now()) @map("computed_at")
+
+  @@index([organizationId, period])
+  @@index([repositoryId])
+  @@map("quality_leaderboards")
+}
+
+// ============================================================================
+// Next-Gen V3: Auto-Healing Documentation
+// ============================================================================
+
+/// A scan that detects and auto-fixes documentation issues.
+model HealingScan {
+  id             String   @id @default(cuid())
+  repositoryId   String   @map("repository_id")
+  triggeredBy    String   @map("triggered_by")
+  issuesFound    Int      @default(0) @map("issues_found")
+  issuesFixed    Int      @default(0) @map("issues_fixed")
+  issues         Json     @default("[]")
+  prCreated      Boolean  @default(false) @map("pr_created")
+  prUrl          String?  @map("pr_url")
+  status         String   @default("pending")
+  scannedAt      DateTime @default(now()) @map("scanned_at")
+
+  @@index([repositoryId])
+  @@index([repositoryId, scannedAt])
+  @@map("healing_scans")
+}
+
+/// Configuration for auto-healing documentation scans.
+model HealingConfig {
+  id                 String   @id @default(cuid())
+  repositoryId       String   @unique @map("repository_id")
+  enabled            Boolean  @default(true)
+  autoFix            Boolean  @default(false) @map("auto_fix")
+  scanTypes          Json     @default("[]") @map("scan_types")
+  excludePaths       Json     @default("[]") @map("exclude_paths")
+  maxAutoFixPerRun   Int      @default(10) @map("max_auto_fix_per_run")
+  cronSchedule       String   @default("0 3 * * *") @map("cron_schedule")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("healing_configs")
+}
+
+// ============================================================================
+// Next-Gen V3: Multi-Repo Knowledge Graph V2
+// ============================================================================
+
+/// A node in the multi-repo knowledge graph.
+model KnowledgeGraphNode {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  repositoryId   String   @map("repository_id")
+  nodeType       String   @map("node_type")
+  label          String
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([nodeType])
+  @@map("knowledge_graph_nodes")
+}
+
+/// A directed edge in the multi-repo knowledge graph.
+model KnowledgeGraphEdge {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  sourceNodeId   String   @map("source_node_id")
+  targetNodeId   String   @map("target_node_id")
+  edgeType       String   @map("edge_type")
+  label          String?
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId])
+  @@index([sourceNodeId])
+  @@index([targetNodeId])
+  @@map("knowledge_graph_edges")
+}
+
+/// A point-in-time snapshot of knowledge graph metrics.
+model KnowledgeGraphSnapshot {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  totalNodes     Int      @default(0) @map("total_nodes")
+  totalEdges     Int      @default(0) @map("total_edges")
+  repositories   Int      @default(0)
+  metadata       Json     @default("{}")
+  generatedAt    DateTime @default(now()) @map("generated_at")
+
+  @@index([organizationId])
+  @@map("knowledge_graph_snapshots")
+}
+
+// ============================================================================
+// Next-Gen V3: Documentation ROI Dashboard V2
+// ============================================================================
+
+/// ROI metrics dashboard for documentation investment.
+model ROIDashboard {
+  id               String   @id @default(cuid())
+  organizationId   String   @map("organization_id")
+  periodStart      DateTime @map("period_start")
+  periodEnd        DateTime @map("period_end")
+  metrics          Json     @default("[]")
+  totalHoursSaved  Float    @default(0) @map("total_hours_saved")
+  totalCostSaved   Float    @default(0) @map("total_cost_saved")
+  docUsageStats    Json     @default("{}") @map("doc_usage_stats")
+  comparisonDelta  Json     @default("{}") @map("comparison_delta")
+  generatedAt      DateTime @default(now()) @map("generated_at")
+
+  @@index([organizationId])
+  @@index([organizationId, periodStart])
+  @@map("roi_dashboards")
+}
+
+/// A raw usage event for documentation ROI tracking.
+model DocUsageEvent {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  repositoryId   String?  @map("repository_id")
+  documentId     String?  @map("document_id")
+  eventType      String   @map("event_type") // page_view, search, feedback
+  visitorId      String?  @map("visitor_id")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId, eventType])
+  @@index([documentId])
+  @@index([createdAt])
+  @@map("doc_usage_events")
+}
+
+// ============================================================================
+// Next-Gen V3: Interactive Code Examples V2
+// ============================================================================
+
+/// V2 interactive code example with runtime validation.
+model InteractiveExampleV2 {
+  id             String    @id @default(cuid())
+  documentId     String    @map("document_id")
+  repositoryId   String    @map("repository_id")
+  title          String
+  language       String
+  runtime        String
+  code           String    @db.Text
+  expectedOutput String?   @db.Text @map("expected_output")
+  dependencies   Json      @default("{}")
+  isValid        Boolean   @default(true) @map("is_valid")
+  shareUrl       String?   @map("share_url")
+  lastValidated  DateTime? @map("last_validated")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([repositoryId])
+  @@index([documentId])
+  @@map("interactive_examples_v2")
+}
+
+/// A V2 execution result for an interactive code example.
+model ExampleExecution {
+  id          String   @id @default(cuid())
+  exampleId   String   @map("example_id")
+  success     Boolean
+  stdout      String   @db.Text
+  stderr      String   @db.Text
+  exitCode    Int      @map("exit_code")
+  durationMs  Int      @map("duration_ms")
+  memoryMB    Float    @map("memory_mb")
+  executedAt  DateTime @default(now()) @map("executed_at")
+
+  @@index([exampleId])
+  @@map("example_executions")
+}
+
+// ============================================================================
+// Next-Gen V3: Compliance & Security Scanner V2
+// ============================================================================
+
+/// V2 compliance scan with multi-framework support.
+model ComplianceScanV2 {
+  id               String   @id @default(cuid())
+  repositoryId     String   @map("repository_id")
+  frameworks       Json     @default("[]")
+  violations       Json     @default("[]")
+  passRate         Float    @default(0) @map("pass_rate")
+  blockers         Int      @default(0)
+  scannedDocuments Int      @default(0) @map("scanned_documents")
+  status           String   @default("pending")
+  scannedAt        DateTime @default(now()) @map("scanned_at")
+
+  @@index([repositoryId])
+  @@index([repositoryId, scannedAt])
+  @@map("compliance_scans_v2")
+}
+
+/// A single compliance rule within a regulatory framework.
+model ComplianceRule {
+  id          String   @id @default(cuid())
+  framework   String
+  ruleId      String   @map("rule_id")
+  title       String
+  description String   @db.Text
+  severity    String
+  pattern     String?  @db.Text
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([framework, ruleId])
+  @@index([framework])
+  @@map("compliance_rules")
+}
+
+// ============================================================================
+// Next-Gen V3: Multi-Language Documentation V2
+// ============================================================================
+
+/// V2 document translation with quality scoring.
+model TranslationV2 {
+  id              String   @id @default(cuid())
+  documentId      String   @map("document_id")
+  repositoryId    String   @map("repository_id")
+  sourceLanguage  String   @default("en") @map("source_language")
+  targetLanguage  String   @map("target_language")
+  content         String   @db.Text
+  quality         Float    @default(0)
+  glossaryTerms   Int      @default(0) @map("glossary_terms")
+  sourceVersion   String   @map("source_version")
+  needsUpdate     Boolean  @default(false) @map("needs_update")
+  translatedAt    DateTime @default(now()) @map("translated_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([documentId, targetLanguage])
+  @@index([repositoryId])
+  @@index([repositoryId, targetLanguage])
+  @@map("translations_v2")
+}
+
+/// Shared glossary of terms for consistent translations.
+model TranslationGlossary {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  term           String
+  translations   Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, term])
+  @@index([organizationId])
+  @@map("translation_glossaries")
+}
+
+// ============================================================================
+// Next-Gen V3: Doc-Driven Development Mode
+// ============================================================================
+
+/// A documentation specification for doc-driven development.
+model DocSpec {
+  id           String   @id @default(cuid())
+  repositoryId String   @map("repository_id")
+  documentId   String   @map("document_id")
+  title        String
+  endpoints    Json     @default("[]")
+  dataModels   Json     @default("[]")
+  constraints  Json     @default("[]")
+  status       String   @default("draft")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([repositoryId])
+  @@index([documentId])
+  @@map("doc_specs")
+}
+
+/// A code artifact generated from a documentation spec.
+model GeneratedArtifact {
+  id           String   @id @default(cuid())
+  specId       String   @map("spec_id")
+  artifactType String   @map("artifact_type")
+  language     String
+  content      String   @db.Text
+  path         String
+  testsPassing Boolean? @map("tests_passing")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([specId])
+  @@map("generated_artifacts")
+}
+
+// ============================================================================
+// Next-Gen V3: Documentation Chatbot for Support
+// ============================================================================
+
+/// Configuration for an embeddable documentation chatbot.
+model ChatbotConfig {
+  id                String   @id @default(cuid())
+  repositoryId      String   @unique @map("repository_id")
+  widgetTitle       String   @default("Documentation Assistant") @map("widget_title")
+  welcomeMessage    String   @default("How can I help you?") @map("welcome_message")
+  primaryColor      String   @default("#0066FF") @map("primary_color")
+  position          String   @default("bottom-right")
+  escalationEnabled Boolean  @default(false) @map("escalation_enabled")
+  escalationEmail   String?  @map("escalation_email")
+  allowedDomains    Json     @default("[]") @map("allowed_domains")
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("chatbot_configs")
+}
+
+/// A visitor conversation with the documentation chatbot.
+model ChatbotConversation {
+  id              String    @id @default(cuid())
+  chatbotConfigId String    @map("chatbot_config_id")
+  visitorId       String    @map("visitor_id")
+  messages        Json      @default("[]")
+  satisfaction    Int?
+  escalated       Boolean   @default(false)
+  startedAt       DateTime  @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+
+  @@index([chatbotConfigId])
+  @@index([visitorId])
+  @@map("chatbot_conversations")
 }
 
