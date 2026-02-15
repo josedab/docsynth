@@ -60,6 +60,33 @@ export const QUEUE_NAMES = {
   API_CHANGELOG: 'api-changelog',
   EXECUTIVE_REPORT: 'executive-report',
   SDK_DOCS_GENERATION: 'sdk-docs-generation',
+  // Next-gen v3 feature queues
+  SMART_DIFF: 'smart-diff',
+  DOC_QUALITY_SCORE: 'doc-quality-score',
+  AUTO_HEALING: 'auto-healing',
+  MULTI_REPO_GRAPH: 'multi-repo-graph',
+  ROI_DASHBOARD: 'roi-dashboard',
+  INTERACTIVE_EXAMPLE_V2: 'interactive-example-next',
+  COMPLIANCE_SCAN_V2: 'compliance-scan-next',
+  MULTI_LANG_DOC: 'multi-lang-doc',
+  DOC_DRIVEN_DEV: 'doc-driven-dev',
+  DOC_CHATBOT: 'doc-chatbot',
+  // Feature #9: Enhanced Documentation Impact Scoring
+  IMPACT_SCORING: 'impact-scoring',
+  // Feature #7: LLM Cost Optimizer & Budget Controls
+  LLM_COST_CHECK: 'llm-cost-check',
+  // Feature #2: AI Documentation Linter
+  DOC_LINT: 'doc-lint',
+  // Feature #4: Documentation-as-Tests
+  DOC_AS_TESTS: 'doc-as-tests',
+  // Feature #10: OpenAPI/GraphQL Spec-Aware Generation
+  SPEC_AWARE_DOCS: 'spec-aware-docs',
+  // Feature #5: Smart Monorepo Documentation Hub
+  MONOREPO_HUB: 'monorepo-hub',
+  // Feature #6: Real-Time Collaborative Documentation Editor
+  REALTIME_EDITOR: 'realtime-editor',
+  // Feature #8: Embeddable Documentation Widget
+  WIDGET_ANALYTICS: 'widget-analytics',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -566,6 +593,139 @@ export interface SDKDocsGenerationJobData {
   };
 }
 
+// Next-gen v3: Smart Diff
+export interface SmartDiffJobData {
+  repositoryId: string;
+  prNumber: number;
+  installationId: number;
+  owner: string;
+  repo: string;
+}
+
+// Next-gen v3: Doc Quality Score
+export interface DocQualityScoreJobData {
+  repositoryId: string;
+  documentId?: string;
+  fullScan: boolean;
+}
+
+// Next-gen v3: Auto-Healing
+export interface AutoHealingJobData {
+  repositoryId: string;
+  triggeredBy: 'scheduled' | 'manual' | 'webhook';
+  scanTypes?: string[];
+}
+
+// Next-gen v3: Multi-Repo Knowledge Graph V2
+export interface MultiRepoGraphV2JobData {
+  organizationId: string;
+  repositoryIds?: string[];
+  includeDepAnalysis: boolean;
+}
+
+// Next-gen v3: ROI Dashboard
+export interface ROIDashboardJobData {
+  organizationId: string;
+  periodDays: number;
+}
+
+// Next-gen v3: Interactive Examples V2
+export interface InteractiveExampleV2JobData {
+  repositoryId: string;
+  documentId?: string;
+  action: 'validate' | 'generate' | 'update';
+}
+
+// Next-gen v3: Compliance Scanner V2
+export interface ComplianceScanV2JobData {
+  repositoryId: string;
+  frameworks: string[];
+  blockOnCritical: boolean;
+}
+
+// Next-gen v3: Multi-Language Docs
+export interface MultiLangDocJobData {
+  repositoryId: string;
+  documentId?: string;
+  targetLanguages: string[];
+  glossaryId?: string;
+}
+
+// Next-gen v3: Doc-Driven Development
+export interface DocDrivenDevJobData {
+  repositoryId: string;
+  documentId: string;
+  targetLanguage: string;
+  generateTests: boolean;
+}
+
+// Next-gen v3: Documentation Chatbot
+export interface DocChatbotJobData {
+  chatbotConfigId: string;
+  conversationId: string;
+  message: string;
+  visitorId: string;
+}
+
+// Feature #9: Enhanced Documentation Impact Scoring
+export interface ImpactScoringJobData {
+  repositoryId: string;
+  prNumber: number;
+  action: 'auto-generate' | 'manual' | 'worker-analysis';
+  score?: number;
+}
+
+// Feature #7: LLM Cost Optimizer & Budget Controls
+export interface LLMCostCheckJobData {
+  organizationId?: string;
+  scheduled?: boolean;
+}
+
+// Feature #2: AI Documentation Linter
+export interface DocLintJobData {
+  repositoryId: string;
+  prNumber?: number;
+  installationId?: string;
+  fullScan?: boolean;
+}
+
+// Feature #4: Documentation-as-Tests
+export interface DocAsTestsJobData {
+  repositoryId: string;
+  documentId?: string;
+}
+
+// Feature #10: OpenAPI/GraphQL Spec-Aware Generation
+export interface SpecAwareDocsJobData {
+  repositoryId: string;
+  specContent: string;
+  specType: 'openapi' | 'graphql';
+  language?: string;
+  action: 'generate' | 'diff' | 'changelog';
+  oldSpecContent?: string;
+  version?: string;
+}
+
+// Feature #5: Smart Monorepo Documentation Hub
+export interface MonorepoHubJobData {
+  repositoryId: string;
+  type: 'discover' | 'generate' | 'refresh';
+}
+
+// Feature #8: Embeddable Documentation Widget
+export interface WidgetAnalyticsJobData {
+  widgetId: string;
+  period: { start: string; end: string };
+}
+
+// Feature #6: Real-Time Collaborative Documentation Editor
+export interface RealtimeEditorJobData {
+  action: 'cleanup' | 'ai-suggestions' | 'version-compaction';
+  sessionId?: string;
+  documentId?: string;
+  context?: Record<string, unknown>;
+}
+
 // ============================================================================
 // Job Data Map (maps queue names to their data types)
 // ============================================================================
@@ -627,4 +787,27 @@ export type JobDataMap = {
   [QUEUE_NAMES.API_CHANGELOG]: APIChangelogJobData;
   [QUEUE_NAMES.EXECUTIVE_REPORT]: ExecutiveReportJobData;
   [QUEUE_NAMES.SDK_DOCS_GENERATION]: SDKDocsGenerationJobData;
+  // Next-gen v3 feature job data mappings
+  [QUEUE_NAMES.SMART_DIFF]: SmartDiffJobData;
+  [QUEUE_NAMES.DOC_QUALITY_SCORE]: DocQualityScoreJobData;
+  [QUEUE_NAMES.AUTO_HEALING]: AutoHealingJobData;
+  [QUEUE_NAMES.MULTI_REPO_GRAPH]: MultiRepoGraphV2JobData;
+  [QUEUE_NAMES.ROI_DASHBOARD]: ROIDashboardJobData;
+  [QUEUE_NAMES.INTERACTIVE_EXAMPLE_V2]: InteractiveExampleV2JobData;
+  [QUEUE_NAMES.COMPLIANCE_SCAN_V2]: ComplianceScanV2JobData;
+  [QUEUE_NAMES.MULTI_LANG_DOC]: MultiLangDocJobData;
+  [QUEUE_NAMES.DOC_DRIVEN_DEV]: DocDrivenDevJobData;
+  [QUEUE_NAMES.DOC_CHATBOT]: DocChatbotJobData;
+  [QUEUE_NAMES.IMPACT_SCORING]: ImpactScoringJobData;
+  [QUEUE_NAMES.LLM_COST_CHECK]: LLMCostCheckJobData;
+  [QUEUE_NAMES.DOC_LINT]: DocLintJobData;
+  [QUEUE_NAMES.DOC_AS_TESTS]: DocAsTestsJobData;
+  // Feature #10: OpenAPI/GraphQL Spec-Aware Generation
+  [QUEUE_NAMES.SPEC_AWARE_DOCS]: SpecAwareDocsJobData;
+  // Feature #5: Smart Monorepo Documentation Hub
+  [QUEUE_NAMES.MONOREPO_HUB]: MonorepoHubJobData;
+  // Feature #6: Real-Time Collaborative Documentation Editor
+  [QUEUE_NAMES.REALTIME_EDITOR]: RealtimeEditorJobData;
+  // Feature #8: Embeddable Documentation Widget
+  [QUEUE_NAMES.WIDGET_ANALYTICS]: WidgetAnalyticsJobData;
 };
