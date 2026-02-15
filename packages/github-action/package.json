@@ -1,0 +1,25 @@
+{
+  "name": "@docsynth/github-action",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "GitHub Action for DocSynth documentation generation",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@docsynth/core": "*",
+    "@docsynth/lint": "*",
+    "@docsynth/types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
+  }
+}

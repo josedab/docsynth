@@ -1,0 +1,50 @@
+name: 'DocSynth - AI Documentation Generator'
+description: 'Automatically generate and update documentation from code changes'
+author: 'DocSynth'
+branding:
+  icon: 'book-open'
+  color: 'blue'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: '${{ github.token }}'
+  llm-provider:
+    description: 'LLM provider to use (anthropic, openai, none)'
+    required: false
+    default: 'none'
+  anthropic-api-key:
+    description: 'Anthropic API key (required if llm-provider is anthropic)'
+    required: false
+  openai-api-key:
+    description: 'OpenAI API key (required if llm-provider is openai)'
+    required: false
+  doc-types:
+    description: 'Comma-separated list of doc types to generate (readme,changelog,api-reference)'
+    required: false
+    default: 'readme,changelog'
+  output-mode:
+    description: 'Output mode: comment (PR comment), commit (commit to branch), or pr (open PR)'
+    required: false
+    default: 'comment'
+  config-file:
+    description: 'Path to .docsynth.json config file'
+    required: false
+    default: '.docsynth.json'
+  dry-run:
+    description: 'If true, only analyze without generating (no LLM calls)'
+    required: false
+    default: 'false'
+
+outputs:
+  impact-score:
+    description: 'Documentation impact score (0-100)'
+  changed-docs:
+    description: 'Number of documentation files that need updates'
+  generated-files:
+    description: 'Comma-separated list of generated/updated documentation files'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
