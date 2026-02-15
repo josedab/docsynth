@@ -3,6 +3,7 @@
 [![CI](https://github.com/docsynth/docsynth/actions/workflows/ci.yml/badge.svg)](https://github.com/docsynth/docsynth/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js 20+](https://img.shields.io/badge/node-20%2B-brightgreen.svg)](https://nodejs.org)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/docsynth/docsynth?devcontainer_path=.devcontainer/devcontainer.json)
 
 > AI-powered documentation that stays current with your code
 
@@ -29,48 +30,46 @@ PR Merged → Change Analysis → Intent Inference → Doc Generation → Doc Re
 
 - Node.js 20+
 - Docker (for local development)
-- GitHub account
 
-### One-Command Setup
+### Setup
 
 ```bash
 git clone https://github.com/docsynth/docsynth.git
 cd docsynth
-make quickstart    # Checks deps, installs, starts Docker, sets up DB, launches dev servers
+npm run quickstart
 ```
 
-Or equivalently: `npm run quickstart`
-
-This single command will:
-
-- Verify prerequisites (Node.js 20+, Docker running)
-- Install npm dependencies and generate Prisma client
-- Create `.env` with auto-generated secrets and **DEMO_MODE enabled**
-- Start PostgreSQL and Redis via Docker
-- Apply the database schema and seed sample data
-- Start all development servers
+That's it. This single command verifies prerequisites, installs dependencies, creates `.env` with auto-generated secrets and **DEMO_MODE enabled**, starts PostgreSQL and Redis via Docker, applies the database schema, seeds sample data, and launches all development servers.
 
 Open http://localhost:3000 (dashboard) and http://localhost:3001/docs (API docs).
 
 > **Note:** Demo mode lets you explore DocSynth without a GitHub App. To connect a real repository, edit `.env`, set `DEMO_MODE=false`, and configure your [GitHub App credentials](#environment-variables).
 
-### Manual Setup
+> **Tip:** `npm run quickstart`, `make quickstart`, and `bash scripts/quickstart.sh` are all equivalent.
+
+<details>
+<summary>Alternative: Manual step-by-step setup</summary>
 
 ```bash
 npm install
-cp .env.example .env   # Edit to add your config
+cp .env.example .env   # Edit to add your config (or leave defaults for demo mode)
 docker compose up -d    # Start PostgreSQL and Redis
 npm run db:generate     # Generate Prisma client
 npm run db:push         # Apply database schema
 npm run dev             # Start development servers
 ```
 
-### Full-Stack Docker (No Node.js Required)
+</details>
+
+<details>
+<summary>Alternative: Full-stack Docker (no local Node.js required)</summary>
 
 ```bash
 ./scripts/setup.sh     # Creates .env with secrets, starts Docker, sets up DB
 docker compose -f docker-compose.dev.yml up
 ```
+
+</details>
 
 ### Using the CLI
 
@@ -219,6 +218,21 @@ See `examples/config-templates/` for pre-built configs for Node.js/TypeScript, P
 
 > **Tip:** Run `make` to see all available commands with descriptions.
 
+### Exploring Without Docker
+
+If you don't have Docker installed or just want to browse the code and run tests:
+
+```bash
+npm install                                       # Install dependencies
+npm run db:generate                               # Generate Prisma client (needed for types)
+npm run test:unit                                 # Run unit tests — no Docker needed
+npm run test:watch                                # Watch mode for TDD
+npm run typecheck                                 # Type-check all packages
+DEMO=true npx tsx examples/api-usage.ts           # See API example with mock data
+```
+
+### Full Development (Requires Docker)
+
 ```bash
 # Run all apps in development mode
 npm run dev
@@ -289,6 +303,13 @@ See `.env.example` for all environment variables. Required variables are clearly
 | `STRIPE_SECRET_KEY`                           | Stripe for billing                   |
 
 ## Examples
+
+Try immediately without running services:
+
+```bash
+DEMO=true npx tsx examples/api-usage.ts     # Mock API responses
+npx tsx examples/scm-provider-usage.ts       # Provider detection (no creds needed)
+```
 
 | Example                                                           | Description                              | Run                                      |
 | ----------------------------------------------------------------- | ---------------------------------------- | ---------------------------------------- |
