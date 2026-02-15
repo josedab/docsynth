@@ -259,7 +259,14 @@ export interface GenerationJob {
   updatedAt: Date;
 }
 
-export type JobStatus = 'PENDING' | 'ANALYZING' | 'INFERRING' | 'GENERATING' | 'REVIEWING' | 'COMPLETED' | 'FAILED';
+export type JobStatus =
+  | 'PENDING'
+  | 'ANALYZING'
+  | 'INFERRING'
+  | 'GENERATING'
+  | 'REVIEWING'
+  | 'COMPLETED'
+  | 'FAILED';
 
 export interface GenerationResult {
   documents: GeneratedDocument[];
@@ -465,11 +472,11 @@ export interface DocHealthScore {
   path: string;
   type: DocumentType;
   scores: {
-    freshness: number;      // 0-100: How recently updated vs code changes
-    completeness: number;   // 0-100: Coverage of required sections
-    accuracy: number;       // 0-100: Alignment with current code
-    readability: number;    // 0-100: Flesch score adaptation
-    overall: number;        // Weighted average
+    freshness: number; // 0-100: How recently updated vs code changes
+    completeness: number; // 0-100: Coverage of required sections
+    accuracy: number; // 0-100: Alignment with current code
+    readability: number; // 0-100: Flesch score adaptation
+    overall: number; // Weighted average
   };
   factors: {
     daysSinceUpdate: number;
@@ -503,7 +510,7 @@ export interface DriftDetectionResult {
   documentId: string;
   documentPath: string;
   repositoryId: string;
-  driftScore: number;          // 0-100: How much doc has drifted from code
+  driftScore: number; // 0-100: How much doc has drifted from code
   driftType: DriftType;
   affectedSections: string[];
   relatedCodeChanges: {
@@ -515,12 +522,12 @@ export interface DriftDetectionResult {
   detectedAt: Date;
 }
 
-export type DriftType = 
-  | 'content-outdated'      // Doc content no longer matches code
-  | 'missing-api'           // New APIs not documented
-  | 'deprecated-reference'  // Doc references deprecated code
-  | 'structural-mismatch'   // Doc structure doesn't match code structure
-  | 'terminology-drift';    // Terms used inconsistently
+export type DriftType =
+  | 'content-outdated' // Doc content no longer matches code
+  | 'missing-api' // New APIs not documented
+  | 'deprecated-reference' // Doc references deprecated code
+  | 'structural-mismatch' // Doc structure doesn't match code structure
+  | 'terminology-drift'; // Terms used inconsistently
 
 export type DriftRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -529,30 +536,30 @@ export interface DriftPrediction {
   repositoryId: string;
   documentId: string | null;
   documentPath: string;
-  driftProbability: number;     // 0-100: Probability of drift occurring
+  driftProbability: number; // 0-100: Probability of drift occurring
   riskLevel: DriftRiskLevel;
   predictedDriftDate: Date | null;
-  
+
   // Signals contributing to prediction
   prActivityScore: number;
   changeVelocityScore: number;
   staleDaysScore: number;
   relatedIssuesScore: number;
-  
+
   // Related changes
   relatedPRs: Array<{ number: number; title: string; mergedAt: Date }>;
   affectedFiles: string[];
-  
+
   // Recommendations
   suggestedActions: string[];
   estimatedEffort: 'quick' | 'moderate' | 'substantial';
-  
+
   // Status
   status: 'active' | 'acknowledged' | 'resolved' | 'false_positive';
   acknowledgedBy: string | null;
   acknowledgedAt: Date | null;
   resolvedAt: Date | null;
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -561,7 +568,7 @@ export interface DriftPrediction {
 // Diagram Generation Types
 // ============================================================================
 
-export type DiagramType = 
+export type DiagramType =
   | 'architecture'
   | 'sequence'
   | 'class'
@@ -573,7 +580,7 @@ export type DiagramType =
 export interface DiagramRequest {
   repositoryId: string;
   diagramType: DiagramType;
-  scope?: string;       // Path or module to focus on
+  scope?: string; // Path or module to focus on
   includeTests?: boolean;
   maxDepth?: number;
 }
@@ -615,8 +622,8 @@ export interface TemplateSection {
   heading: string;
   required: boolean;
   order: number;
-  promptHint: string;       // Hint for AI generation
-  defaultContent?: string;  // Default content if AI can't generate
+  promptHint: string; // Hint for AI generation
+  defaultContent?: string; // Default content if AI can't generate
 }
 
 export interface TemplateVariable {
@@ -639,8 +646,7 @@ export interface TemplateStyle {
 // Translation Types
 // ============================================================================
 
-export type SupportedLanguage = 
-  | 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'zh' | 'ja' | 'ko' | 'ru';
+export type SupportedLanguage = 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'zh' | 'ja' | 'ko' | 'ru';
 
 export interface TranslationRequest {
   documentId: string;
@@ -894,13 +900,7 @@ export interface GeneratedTest {
   createdAt: Date;
 }
 
-export type TestFramework = 
-  | 'jest'
-  | 'vitest'
-  | 'mocha'
-  | 'pytest'
-  | 'go-testing'
-  | 'rust-test';
+export type TestFramework = 'jest' | 'vitest' | 'mocha' | 'pytest' | 'go-testing' | 'rust-test';
 
 export interface TestValidationResult {
   passed: boolean;
@@ -937,7 +937,10 @@ export interface IDEPreviewRequest {
   filePath: string;
   fileContent: string;
   cursorPosition?: { line: number; character: number };
-  selectedRange?: { start: { line: number; character: number }; end: { line: number; character: number } };
+  selectedRange?: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  };
 }
 
 export interface IDEPreviewResponse {
@@ -1040,7 +1043,7 @@ export interface HealthAlert {
   createdAt: Date;
 }
 
-export type HealthAlertType = 
+export type HealthAlertType =
   | 'score-drop'
   | 'critical-doc'
   | 'drift-detected'
@@ -1198,7 +1201,7 @@ export interface KnowledgeEntity {
   embedding?: number[];
 }
 
-export type EntityType = 
+export type EntityType =
   | 'concept'
   | 'function'
   | 'class'
@@ -1328,7 +1331,13 @@ export interface DocSuggestion {
   codeRef?: string;
 }
 
-export type ReviewCategory = 'accuracy' | 'clarity' | 'style' | 'grammar' | 'completeness' | 'outdated';
+export type ReviewCategory =
+  | 'accuracy'
+  | 'clarity'
+  | 'style'
+  | 'grammar'
+  | 'completeness'
+  | 'outdated';
 export type ReviewSeverity = 'error' | 'warning' | 'suggestion' | 'info';
 
 export interface CodeReference {
@@ -1438,11 +1447,29 @@ export interface TranslationResult {
 }
 
 export const SUPPORTED_LOCALES = [
-  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh-CN', 'zh-TW',
-  'ru', 'ar', 'hi', 'nl', 'pl', 'sv', 'tr', 'vi', 'th', 'id'
+  'en',
+  'es',
+  'fr',
+  'de',
+  'it',
+  'pt',
+  'ja',
+  'ko',
+  'zh-CN',
+  'zh-TW',
+  'ru',
+  'ar',
+  'hi',
+  'nl',
+  'pl',
+  'sv',
+  'tr',
+  'vi',
+  'th',
+  'id',
 ] as const;
 
-export type SupportedLocale = typeof SUPPORTED_LOCALES[number];
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
 // ============================================================================
 // Feature 6: Architecture Diagram Generator
@@ -1677,10 +1704,30 @@ export interface BotCommand {
 }
 
 export const BOT_COMMANDS: BotCommand[] = [
-  { command: '/docs search', description: 'Search documentation', usage: '/docs search <query>', handler: 'handleSearch' },
-  { command: '/docs ask', description: 'Ask a question', usage: '/docs ask <question>', handler: 'handleAsk' },
-  { command: '/docs health', description: 'Get doc health summary', usage: '/docs health [repo]', handler: 'handleHealth' },
-  { command: '/docs subscribe', description: 'Subscribe to alerts', usage: '/docs subscribe <repo> <type>', handler: 'handleSubscribe' },
+  {
+    command: '/docs search',
+    description: 'Search documentation',
+    usage: '/docs search <query>',
+    handler: 'handleSearch',
+  },
+  {
+    command: '/docs ask',
+    description: 'Ask a question',
+    usage: '/docs ask <question>',
+    handler: 'handleAsk',
+  },
+  {
+    command: '/docs health',
+    description: 'Get doc health summary',
+    usage: '/docs health [repo]',
+    handler: 'handleHealth',
+  },
+  {
+    command: '/docs subscribe',
+    description: 'Subscribe to alerts',
+    usage: '/docs subscribe <repo> <type>',
+    handler: 'handleSubscribe',
+  },
   { command: '/docs help', description: 'Show help', usage: '/docs help', handler: 'handleHelp' },
 ];
 
@@ -1691,11 +1738,38 @@ export const BOT_COMMANDS: BotCommand[] = [
 export interface GitOpsConfig {
   version: '1';
   project?: { name?: string; description?: string; defaultLanguage?: string; languages?: string[] };
-  triggers?: { onPRMerge?: boolean; onPush?: boolean; branches?: string[]; paths?: { include?: string[]; exclude?: string[] }; schedule?: string };
-  documents?: Array<{ type: DocumentType; path: string; enabled?: boolean; template?: string; autoUpdate?: boolean }>;
-  quality?: { minCoveragePercent?: number; minHealthScore?: number; failOnDecrease?: boolean; maxDecreasePercent?: number; blockMerge?: boolean };
-  style?: { tone?: 'formal' | 'casual' | 'technical'; includeExamples?: boolean; maxSectionLength?: number; customInstructions?: string };
-  integrations?: { slack?: { channel?: string; notifyOnGeneration?: boolean }; jira?: { project?: string; linkIssues?: boolean }; github?: { createPRComments?: boolean; createCheckRuns?: boolean } };
+  triggers?: {
+    onPRMerge?: boolean;
+    onPush?: boolean;
+    branches?: string[];
+    paths?: { include?: string[]; exclude?: string[] };
+    schedule?: string;
+  };
+  documents?: Array<{
+    type: DocumentType;
+    path: string;
+    enabled?: boolean;
+    template?: string;
+    autoUpdate?: boolean;
+  }>;
+  quality?: {
+    minCoveragePercent?: number;
+    minHealthScore?: number;
+    failOnDecrease?: boolean;
+    maxDecreasePercent?: number;
+    blockMerge?: boolean;
+  };
+  style?: {
+    tone?: 'formal' | 'casual' | 'technical';
+    includeExamples?: boolean;
+    maxSectionLength?: number;
+    customInstructions?: string;
+  };
+  integrations?: {
+    slack?: { channel?: string; notifyOnGeneration?: boolean };
+    jira?: { project?: string; linkIssues?: boolean };
+    github?: { createPRComments?: boolean; createCheckRuns?: boolean };
+  };
 }
 
 // ============================================================================
@@ -1891,7 +1965,17 @@ export interface KPIScorecard {
 // Next-Gen V2: SDK Documentation
 // ============================================================================
 
-export type SDKLanguage = 'python' | 'javascript' | 'typescript' | 'go' | 'java' | 'ruby' | 'csharp' | 'php' | 'rust' | 'swift';
+export type SDKLanguage =
+  | 'python'
+  | 'javascript'
+  | 'typescript'
+  | 'go'
+  | 'java'
+  | 'ruby'
+  | 'csharp'
+  | 'php'
+  | 'rust'
+  | 'swift';
 
 export interface SDKDoc {
   id: string;
@@ -1942,4 +2026,439 @@ export interface LLMProviderStatus {
   selfHosted: boolean;
   model?: string;
   latencyMs?: number;
+}
+
+// ============================================================================
+// Next-Gen V3: Smart Documentation Diff Viewer
+// ============================================================================
+
+export type SmartDiffChangeType = 'added' | 'removed' | 'modified' | 'moved' | 'renamed';
+
+export interface SemanticDiffSection {
+  id: string;
+  changeType: SmartDiffChangeType;
+  conceptName: string;
+  oldContent?: string;
+  newContent?: string;
+  confidence: number;
+  comments: DiffComment[];
+  approved: boolean | null;
+}
+
+export interface DiffComment {
+  id: string;
+  author: string;
+  content: string;
+  createdAt: string;
+  parentId?: string;
+}
+
+export interface SmartDiffResult {
+  id: string;
+  repositoryId: string;
+  prNumber: number;
+  codeDiffSummary: string;
+  docDiffSections: SemanticDiffSection[];
+  overallApprovalStatus: 'pending' | 'partial' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export interface SmartDiffJobData {
+  repositoryId: string;
+  prNumber: number;
+  installationId: number;
+  owner: string;
+  repo: string;
+}
+
+// ============================================================================
+// Next-Gen V3: Documentation Quality Score
+// ============================================================================
+
+export type QualityDimension =
+  | 'completeness'
+  | 'clarity'
+  | 'accuracy'
+  | 'examples'
+  | 'tone'
+  | 'freshness'
+  | 'accessibility'
+  | 'searchability';
+
+export interface DimensionScore {
+  dimension: QualityDimension;
+  score: number;
+  maxScore: number;
+  recommendations: string[];
+}
+
+export interface DocQualityScore {
+  id: string;
+  documentId: string;
+  repositoryId: string;
+  overallScore: number;
+  dimensions: DimensionScore[];
+  badge: 'bronze' | 'silver' | 'gold' | 'platinum';
+  recommendations: QualityRecommendation[];
+  scoredAt: string;
+}
+
+export interface QualityRecommendation {
+  dimension: QualityDimension;
+  priority: 'low' | 'medium' | 'high';
+  title: string;
+  description: string;
+  autoFixable: boolean;
+}
+
+export interface DocQualityJobData {
+  repositoryId: string;
+  documentId?: string;
+  fullScan: boolean;
+}
+
+// ============================================================================
+// Next-Gen V3: Auto-Healing Documentation
+// ============================================================================
+
+export type HealingIssueType =
+  | 'broken_link'
+  | 'stale_api_ref'
+  | 'invalid_example'
+  | 'missing_prereq'
+  | 'outdated_version';
+
+export interface HealingIssue {
+  id: string;
+  type: HealingIssueType;
+  documentId: string;
+  documentPath: string;
+  location: string;
+  description: string;
+  currentValue?: string;
+  suggestedFix?: string;
+  confidence: number;
+  autoFixable: boolean;
+}
+
+export interface HealingScanResult {
+  id: string;
+  repositoryId: string;
+  issuesFound: number;
+  issuesFixed: number;
+  issues: HealingIssue[];
+  prCreated: boolean;
+  prUrl?: string;
+  scannedAt: string;
+}
+
+export interface AutoHealingJobData {
+  repositoryId: string;
+  triggeredBy: 'scheduled' | 'manual' | 'webhook';
+  scanTypes?: HealingIssueType[];
+}
+
+// ============================================================================
+// Next-Gen V3: Multi-Repo Knowledge Graph V2
+// ============================================================================
+
+export type KGNodeType =
+  | 'repository'
+  | 'service'
+  | 'api_endpoint'
+  | 'data_model'
+  | 'shared_lib'
+  | 'config';
+export type KGEdgeType =
+  | 'depends_on'
+  | 'calls'
+  | 'extends'
+  | 'produces'
+  | 'consumes'
+  | 'configures';
+
+export interface KGNode {
+  id: string;
+  type: KGNodeType;
+  label: string;
+  repositoryId: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface KGEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  type: KGEdgeType;
+  label?: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface MultiRepoKnowledgeGraph {
+  id: string;
+  organizationId: string;
+  nodes: KGNode[];
+  edges: KGEdge[];
+  stats: {
+    totalNodes: number;
+    totalEdges: number;
+    repositories: number;
+  };
+  generatedAt: string;
+}
+
+export interface MultiRepoGraphJobData {
+  organizationId: string;
+  repositoryIds?: string[];
+  includeDepAnalysis: boolean;
+}
+
+// ============================================================================
+// Next-Gen V3: Documentation ROI Dashboard V2
+// ============================================================================
+
+export interface ROIMetric {
+  category: 'onboarding' | 'support_deflection' | 'meeting_reduction' | 'knowledge_sharing';
+  label: string;
+  hoursSaved: number;
+  costSavedUSD: number;
+  confidence: number;
+}
+
+export interface ROIDashboardData {
+  id: string;
+  organizationId: string;
+  period: { start: string; end: string };
+  metrics: ROIMetric[];
+  totalHoursSaved: number;
+  totalCostSavedUSD: number;
+  docUsageStats: {
+    pageViews: number;
+    uniqueVisitors: number;
+    searchQueries: number;
+    avgTimeOnPageSec: number;
+  };
+  comparisonPrevPeriod: {
+    hoursSavedDelta: number;
+    costSavedDelta: number;
+  };
+  generatedAt: string;
+}
+
+export interface ROIDashboardJobData {
+  organizationId: string;
+  periodDays: number;
+}
+
+// ============================================================================
+// Next-Gen V3: Interactive Code Examples V2
+// ============================================================================
+
+export type ExampleRuntime = 'nodejs' | 'python' | 'go' | 'rust' | 'browser';
+
+export interface InteractiveExampleV2 {
+  id: string;
+  documentId: string;
+  repositoryId: string;
+  title: string;
+  language: string;
+  runtime: ExampleRuntime;
+  code: string;
+  expectedOutput?: string;
+  dependencies: Record<string, string>;
+  lastValidated?: string;
+  isValid: boolean;
+  shareUrl?: string;
+}
+
+export interface ExampleExecutionResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  durationMs: number;
+  memoryUsedMB: number;
+}
+
+export interface InteractiveExampleJobData {
+  repositoryId: string;
+  documentId?: string;
+  action: 'validate' | 'generate' | 'update';
+}
+
+// ============================================================================
+// Next-Gen V3: Compliance & Security Scanner V2
+// ============================================================================
+
+export type ComplianceFramework = 'soc2' | 'hipaa' | 'gdpr' | 'pci_dss' | 'custom';
+export type ComplianceViolationType =
+  | 'secret_exposed'
+  | 'pii_detected'
+  | 'internal_url'
+  | 'insecure_pattern'
+  | 'policy_violation';
+
+export interface ComplianceViolation {
+  id: string;
+  type: ComplianceViolationType;
+  framework: ComplianceFramework;
+  severity: 'info' | 'warning' | 'critical';
+  documentId: string;
+  documentPath: string;
+  location: string;
+  description: string;
+  remediation: string;
+  autoRemediable: boolean;
+}
+
+export interface ComplianceScanV2Result {
+  id: string;
+  repositoryId: string;
+  frameworks: ComplianceFramework[];
+  violations: ComplianceViolation[];
+  passRate: number;
+  blockers: number;
+  scannedDocuments: number;
+  scannedAt: string;
+}
+
+export interface ComplianceScanV2JobData {
+  repositoryId: string;
+  frameworks: ComplianceFramework[];
+  blockOnCritical: boolean;
+}
+
+// ============================================================================
+// Next-Gen V3: Multi-Language Documentation V2
+// ============================================================================
+
+export interface TranslationV2 {
+  id: string;
+  documentId: string;
+  repositoryId: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  content: string;
+  quality: number;
+  glossaryTermsUsed: number;
+  sourceVersion: string;
+  needsUpdate: boolean;
+  translatedAt: string;
+}
+
+export interface TranslationGlossary {
+  id: string;
+  organizationId: string;
+  term: string;
+  translations: Record<string, string>;
+}
+
+export interface MultiLangDocJobData {
+  repositoryId: string;
+  documentId?: string;
+  targetLanguages: string[];
+  glossaryId?: string;
+}
+
+// ============================================================================
+// Next-Gen V3: Doc-Driven Development Mode
+// ============================================================================
+
+export type GeneratedArtifactType =
+  | 'code_scaffold'
+  | 'api_contract'
+  | 'test_suite'
+  | 'db_schema'
+  | 'openapi_spec';
+
+export interface DocSpec {
+  id: string;
+  repositoryId: string;
+  documentId: string;
+  title: string;
+  endpoints: DocSpecEndpoint[];
+  dataModels: DocSpecModel[];
+  constraints: string[];
+  status: 'draft' | 'validated' | 'generating' | 'generated' | 'failed';
+}
+
+export interface DocSpecEndpoint {
+  method: string;
+  path: string;
+  summary: string;
+  parameters: Array<{ name: string; type: string; required: boolean }>;
+  responseType: string;
+}
+
+export interface DocSpecModel {
+  name: string;
+  fields: Array<{ name: string; type: string; required: boolean; description: string }>;
+}
+
+export interface GeneratedArtifact {
+  id: string;
+  specId: string;
+  type: GeneratedArtifactType;
+  language: string;
+  content: string;
+  path: string;
+  testsPassing: boolean | null;
+}
+
+export interface DocDrivenDevJobData {
+  repositoryId: string;
+  documentId: string;
+  targetLanguage: string;
+  generateTests: boolean;
+}
+
+// ============================================================================
+// Next-Gen V3: Documentation Chatbot for Support
+// ============================================================================
+
+export interface ChatbotConfig {
+  id: string;
+  repositoryId: string;
+  widgetTitle: string;
+  welcomeMessage: string;
+  primaryColor: string;
+  position: 'bottom-right' | 'bottom-left';
+  escalationEnabled: boolean;
+  escalationEmail?: string;
+  allowedDomains: string[];
+  active: boolean;
+}
+
+export interface ChatbotConversation {
+  id: string;
+  chatbotConfigId: string;
+  visitorId: string;
+  messages: ChatbotMessage[];
+  satisfaction?: number;
+  escalated: boolean;
+  startedAt: string;
+  endedAt?: string;
+}
+
+export interface ChatbotMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  confidence?: number;
+  sources?: string[];
+  timestamp: string;
+}
+
+export interface ChatbotAnalytics {
+  totalConversations: number;
+  avgSatisfaction: number;
+  resolutionRate: number;
+  topQuestions: Array<{ question: string; count: number; answered: boolean }>;
+  unansweredTopics: string[];
+}
+
+export interface ChatbotJobData {
+  chatbotConfigId: string;
+  conversationId: string;
+  message: string;
+  visitorId: string;
 }
