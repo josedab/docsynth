@@ -15,20 +15,10 @@ Thank you for your interest in contributing to DocSynth! This guide will help yo
 ```bash
 git clone https://github.com/docsynth/docsynth.git
 cd docsynth
-./scripts/setup.sh
-npm run dev
+npm run quickstart
 ```
 
-Or step-by-step:
-
-```bash
-npm install
-cp .env.example .env       # Edit to add your config, or set DEMO_MODE=true
-docker compose up -d        # Start PostgreSQL and Redis
-npm run db:generate          # Generate Prisma client
-npm run db:push              # Apply database schema
-npm run dev                  # Start all services
-```
+This checks prerequisites, installs dependencies, starts Docker services, sets up the database, and launches dev servers. See the [README](README.md#quick-start) for alternative setup methods.
 
 ### Verify your setup
 
@@ -160,6 +150,16 @@ fix(worker): handle missing PR body in change analysis
 docs: update getting started guide
 chore(deps): update Prisma to 5.10.0
 ```
+
+## Versioning & Releases
+
+This project follows [Semantic Versioning](https://semver.org/). Notable changes are documented in [CHANGELOG.md](CHANGELOG.md) using the [Keep a Changelog](https://keepachangelog.com/) format.
+
+When contributing:
+
+1. Add a summary of your change under the `[Unreleased]` section of `CHANGELOG.md`
+2. Use the appropriate category: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, or `Security`
+3. Maintainers will assign version numbers and create releases
 
 ## Getting Help
 
