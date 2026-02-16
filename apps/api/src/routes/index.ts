@@ -1,6 +1,6 @@
 /**
  * Route Registry
- * 
+ *
  * Organizes and registers all API routes in a maintainable way.
  * Routes are grouped by feature domain for better organization.
  */
@@ -101,6 +101,42 @@ import { apiChangelogRoutes } from './api-changelog.js';
 import { executiveReportsRoutes } from './executive-reports.js';
 import { sdkDocsRoutes } from './sdk-docs.js';
 
+// Next-gen features (v3)
+import { smartDiffRoutes } from './smart-diff.js';
+import { docQualityScoreRoutes } from './doc-quality-score.js';
+import { autoHealingRoutes } from './auto-healing.js';
+import { multiRepoGraphV2Routes } from './multi-repo-graph-v2.js';
+import { roiDashboardV2Routes } from './roi-dashboard-v2.js';
+import { interactiveExamplesV2Routes } from './interactive-examples-v2.js';
+import { complianceScanV2Routes } from './compliance-scan-v2.js';
+import { multiLangDocRoutes } from './multi-lang-doc.js';
+import { docDrivenDevRoutes } from './doc-driven-dev.js';
+import { docChatbotRoutes } from './doc-chatbot.js';
+
+// Feature #9: Enhanced Documentation Impact Scoring
+import { impactScoringRoutes } from './impact-scoring.js';
+
+// Feature #7: LLM Cost Optimizer & Budget Controls
+import { llmCostOptimizerRoutes } from './llm-cost-optimizer.js';
+
+// Feature #2: AI Documentation Linter
+import { docLinterRoutes } from './doc-linter.js';
+
+// Feature #10: OpenAPI/GraphQL Spec-Aware Generation
+import { specAwareDocsRoutes } from './spec-aware-docs.js';
+
+// Feature #4: Documentation-as-Tests
+import { docAsTestsRoutes } from './doc-as-tests.js';
+
+// Feature #5: Smart Monorepo Documentation Hub
+import { monorepoHubRoutes } from './monorepo-hub.js';
+
+// Feature #6: Real-Time Collaborative Documentation Editor
+import { realtimeEditorRoutes } from './realtime-editor.js';
+
+// Feature #8: Embeddable Documentation Widget
+import { widgetRoutes } from './widget.js';
+
 // ============================================================================
 // Route Configuration
 // ============================================================================
@@ -130,7 +166,11 @@ const repositoryRoutes: RouteConfig[] = [
   { path: '/api/repositories', router: repoRoutes, description: 'Repository management' },
   { path: '/api/documents', router: documentRoutes, description: 'Document management' },
   { path: '/api/jobs', router: jobRoutes, description: 'Background jobs' },
-  { path: '/api/scm-providers', router: scmProviderRoutes, description: 'SCM provider management (GitHub, GitLab, Bitbucket)' },
+  {
+    path: '/api/scm-providers',
+    router: scmProviderRoutes,
+    description: 'SCM provider management (GitHub, GitLab, Bitbucket)',
+  },
 ];
 
 /**
@@ -147,11 +187,24 @@ const organizationRoutes: RouteConfig[] = [
  */
 const analyticsFeatureRoutes: RouteConfig[] = [
   { path: '/api/analytics', router: analyticsRoutes, description: 'General analytics' },
-  { path: '/api/doc-analytics', router: docAnalyticsRoutes, description: 'Documentation analytics' },
+  {
+    path: '/api/doc-analytics',
+    router: docAnalyticsRoutes,
+    description: 'Documentation analytics',
+  },
   { path: '/api/health-dashboard', router: healthDashboardRoutes, description: 'Health dashboard' },
   { path: '/api/coverage', router: coverageRoutes, description: 'Documentation coverage' },
   { path: '/api/llm-usage', router: llmUsageRoutes, description: 'LLM usage and cost monitoring' },
-  { path: '/api/roi-analytics', router: roiAnalyticsRoutes, description: 'ROI analytics and dashboard' },
+  {
+    path: '/api/llm-cost-optimizer',
+    router: llmCostOptimizerRoutes,
+    description: 'LLM cost optimization and budget controls',
+  },
+  {
+    path: '/api/roi-analytics',
+    router: roiAnalyticsRoutes,
+    description: 'ROI analytics and dashboard',
+  },
 ];
 
 /**
@@ -165,8 +218,26 @@ const documentationRoutes: RouteConfig[] = [
   { path: '/api/knowledge-graph', router: knowledgeGraphRoutes, description: 'Knowledge graph' },
   { path: '/api/doc-tests', router: docTestRoutes, description: 'Documentation tests' },
   { path: '/api/examples', router: interactiveExamplesRoutes, description: 'Interactive examples' },
-  { path: '/api/doc-validation', router: docValidationRoutes, description: 'Documentation validation' },
-  { path: '/api/doc-testing-v2', router: docTestingV2Routes, description: 'AI Documentation Testing (code execution)' },
+  {
+    path: '/api/doc-validation',
+    router: docValidationRoutes,
+    description: 'Documentation validation',
+  },
+  {
+    path: '/api/doc-testing-v2',
+    router: docTestingV2Routes,
+    description: 'AI Documentation Testing (code execution)',
+  },
+  {
+    path: '/api/doc-linter',
+    router: docLinterRoutes,
+    description: 'Documentation linting and style checking',
+  },
+  {
+    path: '/api/doc-as-tests',
+    router: docAsTestsRoutes,
+    description: 'Documentation-as-Tests: run doc examples as tests',
+  },
 ];
 
 /**
@@ -184,10 +255,15 @@ const advancedDocRoutes: RouteConfig[] = [
  * Integration and tooling routes
  */
 const integrationRoutes: RouteConfig[] = [
-  { path: '/api/integrations', router: integrationsRoutes, description: 'Third-party integrations' },
+  {
+    path: '/api/integrations',
+    router: integrationsRoutes,
+    description: 'Third-party integrations',
+  },
   { path: '/api/bot', router: botRoutes, description: 'Bot commands' },
   { path: '/api/ide', router: ideRoutes, description: 'IDE integration' },
   { path: '/api/onboarding', router: onboardingRoutes, description: 'User onboarding' },
+  { path: '/api/widget', router: widgetRoutes, description: 'Embeddable documentation widget' },
 ];
 
 /**
@@ -201,29 +277,188 @@ const nextGenRoutes: RouteConfig[] = [
   { path: '/api/semver', router: semverRoutes, description: 'Semantic versioning' },
   { path: '/api/drift-prediction', router: driftPredictionRoutes, description: 'Drift prediction' },
   { path: '/api/citations', router: citationRoutes, description: 'Smart search with citations' },
-  { path: '/api/executable-docs', router: executableDocsRoutes, description: 'Executable documentation testing' },
-  { path: '/api/review-workflow', router: reviewWorkflowRoutes, description: 'Collaborative review workflows' },
-  { path: '/api/multi-agent', router: multiAgentDocRoutes, description: 'Multi-agent documentation generation' },
-  { path: '/api/onboarding-paths', router: onboardingPathsRoutes, description: 'Personalized onboarding paths' },
-  { path: '/api/onboarding-paths-v2', router: onboardingPathsV2Routes, description: 'Personalized onboarding paths V2 (role-specific)' },
-  { path: '/api/interactive-playground', router: interactivePlaygroundRoutes, description: 'Interactive code playgrounds' },
-  { path: '/api/review-documentation', router: reviewDocumentationRoutes, description: 'AI code review documentation' },
-  { path: '/api/coverage-gate', router: coverageGateRoutes, description: 'Documentation coverage CI/CD gate' },
-  { path: '/api/ai-editor', router: aiDocEditorRoutes, description: 'AI-powered documentation editor' },
-  { path: '/api/nl-editor', router: nlEditorRoutes, description: 'Natural language documentation editing' },
-  { path: '/api/doc-impact', router: docImpactRoutes, description: 'PR documentation impact analysis' },
-  { path: '/api/migration', router: migrationRoutes, description: 'Smart migration engine for importing docs' },
-  { path: '/api/polling', router: pollingRoutes, description: 'Webhook-less change detection via polling' },
-  { path: '/api/multi-repo-graph', router: multiRepoGraphRoutes, description: 'Multi-repository documentation graph' },
+  {
+    path: '/api/executable-docs',
+    router: executableDocsRoutes,
+    description: 'Executable documentation testing',
+  },
+  {
+    path: '/api/review-workflow',
+    router: reviewWorkflowRoutes,
+    description: 'Collaborative review workflows',
+  },
+  {
+    path: '/api/multi-agent',
+    router: multiAgentDocRoutes,
+    description: 'Multi-agent documentation generation',
+  },
+  {
+    path: '/api/onboarding-paths',
+    router: onboardingPathsRoutes,
+    description: 'Personalized onboarding paths',
+  },
+  {
+    path: '/api/onboarding-paths-v2',
+    router: onboardingPathsV2Routes,
+    description: 'Personalized onboarding paths V2 (role-specific)',
+  },
+  {
+    path: '/api/interactive-playground',
+    router: interactivePlaygroundRoutes,
+    description: 'Interactive code playgrounds',
+  },
+  {
+    path: '/api/review-documentation',
+    router: reviewDocumentationRoutes,
+    description: 'AI code review documentation',
+  },
+  {
+    path: '/api/coverage-gate',
+    router: coverageGateRoutes,
+    description: 'Documentation coverage CI/CD gate',
+  },
+  {
+    path: '/api/ai-editor',
+    router: aiDocEditorRoutes,
+    description: 'AI-powered documentation editor',
+  },
+  {
+    path: '/api/nl-editor',
+    router: nlEditorRoutes,
+    description: 'Natural language documentation editing',
+  },
+  {
+    path: '/api/doc-impact',
+    router: docImpactRoutes,
+    description: 'PR documentation impact analysis',
+  },
+  {
+    path: '/api/migration',
+    router: migrationRoutes,
+    description: 'Smart migration engine for importing docs',
+  },
+  {
+    path: '/api/polling',
+    router: pollingRoutes,
+    description: 'Webhook-less change detection via polling',
+  },
+  {
+    path: '/api/multi-repo-graph',
+    router: multiRepoGraphRoutes,
+    description: 'Multi-repository documentation graph',
+  },
   // Next-gen features v2
-  { path: '/api/gitops', router: gitopsRoutes, description: 'GitOps documentation-as-code configuration' },
-  { path: '/api/pr-doc-review', router: prDocReviewRoutes, description: 'AI documentation review in PR comments' },
-  { path: '/api/federated-hub', router: federatedHubRoutes, description: 'Federated multi-repo documentation hub' },
-  { path: '/api/onboarding-copilot', router: onboardingCopilotRoutes, description: 'Smart onboarding copilot with personalized paths' },
-  { path: '/api/collaborative-editor', router: collaborativeEditorRoutes, description: 'Real-time collaborative document editor' },
-  { path: '/api/api-changelog', router: apiChangelogRoutes, description: 'Automated API changelog and breaking change alerts' },
-  { path: '/api/executive-reports', router: executiveReportsRoutes, description: 'Executive ROI reports and dashboards' },
-  { path: '/api/sdk-docs', router: sdkDocsRoutes, description: 'Multi-language SDK documentation generator' },
+  {
+    path: '/api/gitops',
+    router: gitopsRoutes,
+    description: 'GitOps documentation-as-code configuration',
+  },
+  {
+    path: '/api/pr-doc-review',
+    router: prDocReviewRoutes,
+    description: 'AI documentation review in PR comments',
+  },
+  {
+    path: '/api/federated-hub',
+    router: federatedHubRoutes,
+    description: 'Federated multi-repo documentation hub',
+  },
+  {
+    path: '/api/onboarding-copilot',
+    router: onboardingCopilotRoutes,
+    description: 'Smart onboarding copilot with personalized paths',
+  },
+  {
+    path: '/api/collaborative-editor',
+    router: collaborativeEditorRoutes,
+    description: 'Real-time collaborative document editor',
+  },
+  {
+    path: '/api/api-changelog',
+    router: apiChangelogRoutes,
+    description: 'Automated API changelog and breaking change alerts',
+  },
+  {
+    path: '/api/executive-reports',
+    router: executiveReportsRoutes,
+    description: 'Executive ROI reports and dashboards',
+  },
+  {
+    path: '/api/sdk-docs',
+    router: sdkDocsRoutes,
+    description: 'Multi-language SDK documentation generator',
+  },
+  // Next-gen features v3
+  {
+    path: '/api/smart-diff',
+    router: smartDiffRoutes,
+    description: 'Smart semantic documentation diff viewer',
+  },
+  {
+    path: '/api/doc-quality',
+    router: docQualityScoreRoutes,
+    description: 'AI documentation quality scoring',
+  },
+  {
+    path: '/api/auto-healing',
+    router: autoHealingRoutes,
+    description: 'Auto-healing documentation issues',
+  },
+  {
+    path: '/api/knowledge-graph-v2',
+    router: multiRepoGraphV2Routes,
+    description: 'Multi-repo knowledge graph V2',
+  },
+  {
+    path: '/api/roi-dashboard-v2',
+    router: roiDashboardV2Routes,
+    description: 'Documentation ROI dashboard V2',
+  },
+  {
+    path: '/api/examples-v2',
+    router: interactiveExamplesV2Routes,
+    description: 'Interactive code examples V2',
+  },
+  {
+    path: '/api/compliance-v2',
+    router: complianceScanV2Routes,
+    description: 'Compliance & security scanner V2',
+  },
+  {
+    path: '/api/multi-lang-v2',
+    router: multiLangDocRoutes,
+    description: 'Multi-language documentation V2',
+  },
+  {
+    path: '/api/doc-driven-dev',
+    router: docDrivenDevRoutes,
+    description: 'Doc-driven development mode',
+  },
+  {
+    path: '/api/chatbot',
+    router: docChatbotRoutes,
+    description: 'Documentation chatbot for support',
+  },
+  {
+    path: '/api/impact-scoring',
+    router: impactScoringRoutes,
+    description: 'Enhanced documentation impact scoring for PRs',
+  },
+  {
+    path: '/api/spec-docs',
+    router: specAwareDocsRoutes,
+    description: 'OpenAPI/GraphQL spec-aware documentation generation',
+  },
+  {
+    path: '/api/monorepo-hub',
+    router: monorepoHubRoutes,
+    description: 'Smart monorepo documentation hub',
+  },
+  {
+    path: '/api/realtime-editor',
+    router: realtimeEditorRoutes,
+    description: 'Real-time collaborative documentation editor',
+  },
 ];
 
 /**
@@ -256,7 +491,7 @@ export const allRouteGroups = {
 
 /**
  * Register all routes on a Hono app instance.
- * 
+ *
  * @param app - The Hono application instance
  * @returns The number of routes registered
  */
