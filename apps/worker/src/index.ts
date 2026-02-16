@@ -56,6 +56,36 @@ import { startFederatedHubWorker } from './workers/federated-hub.js';
 import { startAPIChangelogWorker } from './workers/api-changelog.js';
 import { startExecutiveReportWorker } from './workers/executive-report.js';
 import { startSDKDocsGenerationWorker } from './workers/sdk-docs-generation.js';
+// Next-gen v3 feature workers
+import { startSmartDiffWorker } from './workers/smart-diff.js';
+import { startDocQualityScoreWorker } from './workers/doc-quality-score.js';
+import { startAutoHealingWorker, schedulePeriodicAutoHealing } from './workers/auto-healing.js';
+import { startMultiRepoGraphV2Worker } from './workers/multi-repo-graph-v2.js';
+import {
+  startROIDashboardV2Worker,
+  schedulePeriodicROIDashboard,
+} from './workers/roi-dashboard-v2.js';
+import { startInteractiveExampleV2Worker } from './workers/interactive-examples-v2.js';
+import { startComplianceScanV2Worker } from './workers/compliance-scan-v2.js';
+import { startMultiLangDocWorker } from './workers/multi-lang-doc.js';
+import { startDocDrivenDevWorker } from './workers/doc-driven-dev.js';
+import { startDocChatbotWorker } from './workers/doc-chatbot.js';
+// Feature #9: Enhanced Documentation Impact Scoring
+import { startImpactScoringWorker } from './workers/impact-scoring.worker.js';
+// Feature #7: LLM Cost Optimizer & Budget Controls
+import { startLlmCostOptimizerWorker } from './workers/llm-cost-optimizer.worker.js';
+// Feature #2: AI Documentation Linter
+import { startDocLinterWorker } from './workers/doc-linter.worker.js';
+// Feature #10: OpenAPI/GraphQL Spec-Aware Generation
+import { startSpecAwareDocsWorker } from './workers/spec-aware-docs.worker.js';
+// Feature #4: Documentation-as-Tests
+import { startDocAsTestsWorker } from './workers/doc-as-tests.worker.js';
+// Feature #5: Smart Monorepo Documentation Hub
+import { startMonorepoHubWorker } from './workers/monorepo-hub.worker.js';
+// Feature #6: Real-Time Collaborative Documentation Editor
+import { startRealtimeEditorWorker } from './workers/realtime-editor.worker.js';
+// Feature #8: Embeddable Documentation Widget
+import { startWidgetAnalyticsWorker } from './workers/widget-analytics.worker.js';
 
 const log = createLogger('worker');
 
@@ -143,6 +173,33 @@ async function start() {
     workers.push(startAPIChangelogWorker());
     workers.push(startExecutiveReportWorker());
     workers.push(startSDKDocsGenerationWorker());
+    // Next-gen v3 feature workers
+    workers.push(startSmartDiffWorker());
+    workers.push(startDocQualityScoreWorker());
+    workers.push(startAutoHealingWorker());
+    workers.push(startMultiRepoGraphV2Worker());
+    workers.push(startROIDashboardV2Worker());
+    workers.push(startInteractiveExampleV2Worker());
+    workers.push(startComplianceScanV2Worker());
+    workers.push(startMultiLangDocWorker());
+    workers.push(startDocDrivenDevWorker());
+    workers.push(startDocChatbotWorker());
+    // Feature #9: Enhanced Documentation Impact Scoring
+    workers.push(startImpactScoringWorker());
+    // Feature #7: LLM Cost Optimizer & Budget Controls
+    workers.push(startLlmCostOptimizerWorker());
+    // Feature #2: AI Documentation Linter
+    workers.push(startDocLinterWorker());
+    // Feature #4: Documentation-as-Tests
+    workers.push(startDocAsTestsWorker());
+    // Feature #10: OpenAPI/GraphQL Spec-Aware Generation
+    workers.push(startSpecAwareDocsWorker());
+    // Feature #5: Smart Monorepo Documentation Hub
+    workers.push(startMonorepoHubWorker());
+    // Feature #6: Real-Time Collaborative Documentation Editor
+    workers.push(startRealtimeEditorWorker());
+    // Feature #8: Embeddable Documentation Widget
+    workers.push(startWidgetAnalyticsWorker());
 
     // Schedule periodic drift scans (runs daily)
     await schedulePeriodicDriftScans();
@@ -175,6 +232,14 @@ async function start() {
     // Schedule weekly ROI computation
     await scheduleWeeklyROIComputation();
     setInterval(() => scheduleWeeklyROIComputation(), 7 * DRIFT_SCAN_INTERVAL_MS); // Weekly
+
+    // Schedule periodic auto-healing scans (runs daily)
+    await schedulePeriodicAutoHealing();
+    setInterval(() => schedulePeriodicAutoHealing(), DRIFT_SCAN_INTERVAL_MS);
+
+    // Schedule periodic ROI dashboard computation (runs weekly)
+    await schedulePeriodicROIDashboard();
+    setInterval(() => schedulePeriodicROIDashboard(), 7 * DRIFT_SCAN_INTERVAL_MS);
 
     log.info('🚀 DocSynth workers running');
   } catch (error) {
