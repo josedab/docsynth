@@ -24,6 +24,23 @@ PR Merged → Change Analysis → Intent Inference → Doc Generation → Doc Re
 - 📊 **Health Dashboard** — Track documentation freshness, coverage, and drift
 - 💬 **Chat Interface** — RAG-powered Q&A about your codebase
 
+### Feature Status
+
+| Feature                                    | Status         | Notes                                 |
+| ------------------------------------------ | -------------- | ------------------------------------- |
+| Core pipeline (analysis → generation → PR) | ✅ Implemented | Fully functional                      |
+| REST API (40+ endpoints)                   | ✅ Implemented | OpenAPI docs at `/docs`               |
+| Web dashboard                              | ✅ Implemented | Real-time updates                     |
+| Background workers (61 job types)          | ✅ Implemented | BullMQ-based                          |
+| CLI tool                                   | ✅ Implemented | `init`, `generate`, `status`, `login` |
+| GitHub webhook integration                 | ✅ Implemented | PR merge triggers                     |
+| Demo mode                                  | ✅ Implemented | Explore without GitHub App            |
+| Multi-SCM (GitHub, GitLab, Bitbucket)      | ✅ Implemented | Provider abstraction                  |
+| MCP server                                 | ✅ Implemented | AI agent integration                  |
+| VS Code extension                          | ✅ Implemented | Inline docs, preview, health          |
+| Jira/Slack/Linear integrations             | ✅ Implemented | Context gathering                     |
+| Chat (RAG-powered Q&A)                     | ✅ Implemented | Vector search                         |
+
 ## Quick Start
 
 ### Prerequisites
@@ -42,6 +59,8 @@ npm run quickstart
 That's it. This single command verifies prerequisites, installs dependencies, creates `.env` with auto-generated secrets and **DEMO_MODE enabled**, starts PostgreSQL and Redis via Docker, applies the database schema, seeds sample data, and launches all development servers.
 
 Open http://localhost:3000 (dashboard) and http://localhost:3001/docs (API docs).
+
+> **API Reference:** When the API server is running, interactive API documentation (OpenAPI/Swagger) is available at http://localhost:3001/docs. The spec is generated from `apps/api/src/docs/openapi.ts`.
 
 > **Note:** Demo mode lets you explore DocSynth without a GitHub App. To connect a real repository, edit `.env`, set `DEMO_MODE=false`, and configure your [GitHub App credentials](#environment-variables).
 
@@ -97,9 +116,11 @@ npm run docs    # Start docs site at http://localhost:3000
 
 Covers getting started, core concepts, API reference, guides, and advanced topics.
 
+For architecture details including data flow, worker pipeline, and package dependencies, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Architecture
 
-DocSynth is built as a monorepo with the following structure:
+DocSynth is built as a monorepo with the following structure. For a deep dive into data flow, worker pipeline, and design decisions, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ```
 docsynth/
@@ -413,6 +434,10 @@ MIT
 ## Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) before submitting a PR.
+
+## Security
+
+To report a vulnerability, see our [Security Policy](SECURITY.md).
 
 ---
 
