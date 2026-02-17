@@ -147,7 +147,12 @@ check_port() {
   if lsof -i :"$port" >/dev/null 2>&1; then
     local proc=$(lsof -i :"$port" -t 2>/dev/null | head -1)
     local pname=$(ps -p "$proc" -o comm= 2>/dev/null || echo "unknown")
-    warn "Port $port in use by $pname (needed for $service)"
+    # Check if the port is held by our own Docker containers (not a conflict)
+    if echo "$pname" | grep -qiE "com.docker|docker|vpnkit"; then
+      pass "Port $port in use by Docker ($service) — managed by docker-compose"
+    else
+      warn "Port $port in use by $pname (needed for $service) — stop it with: lsof -i :$port -t | xargs kill"
+    fi
   else
     pass "Port $port available ($service)"
   fi

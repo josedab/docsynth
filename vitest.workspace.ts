@@ -6,6 +6,8 @@ export default defineWorkspace([
   'packages/utils',
   'packages/github',
   'packages/queue',
+  'packages/core',
+  'packages/github-action',
   'apps/api',
   'apps/worker',
   'apps/mcp-server',
