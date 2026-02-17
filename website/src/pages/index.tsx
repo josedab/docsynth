@@ -5,61 +5,17 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import CodeBlock from '@theme/CodeBlock';
+import HomepageFeatures from '@site/src/components/HomepageFeatures';
 
 import styles from './index.module.css';
 
-const features = [
-  {
-    emoji: '🤖',
-    title: 'AI-Powered Generation',
-    description: 'Uses advanced LLMs to generate documentation from code changes automatically.',
-  },
-  {
-    emoji: '🔄',
-    title: 'Always Current',
-    description: 'Documentation updates automatically when code changes. No more stale docs.',
-  },
-  {
-    emoji: '🔗',
-    title: 'Multi-Source Context',
-    description: 'Gathers context from PRs, Jira, Slack to understand not just what changed, but why.',
-  },
-  {
-    emoji: '✍️',
-    title: 'Human Quality',
-    description: 'Produces documentation that reads naturally, matching your team\'s voice.',
-  },
-  {
-    emoji: '🎨',
-    title: 'Style Learning',
-    description: 'Learns from your existing docs to maintain consistent tone and formatting.',
-  },
-  {
-    emoji: '🔍',
-    title: 'Drift Detection',
-    description: 'Automatically detects when documentation falls out of sync with code.',
-  },
+const communityStats = [
+  { label: 'Open Source', value: 'MIT License' },
+  { label: 'Apps', value: '6' },
+  { label: 'Packages', value: '10' },
+  { label: 'Job Types', value: '61' },
+  { label: 'API Endpoints', value: '40+' },
 ];
-
-const usedByCompanies = [
-  'Acme Corp',
-  'TechStart',
-  'DevTools Inc',
-  'CloudScale',
-  'DataFlow',
-];
-
-function Feature({ emoji, title, description }: { emoji: string; title: string; description: string }) {
-  return (
-    <div className={clsx('col col--4')}>
-      <div className={styles.featureCard}>
-        <div className={styles.featureEmoji}>{emoji}</div>
-        <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
-      </div>
-    </div>
-  );
-}
 
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
@@ -67,10 +23,22 @@ function HomepageHeader() {
     <header className={clsx('hero', styles.heroBanner)}>
       <div className="container">
         <div className={styles.badges}>
-          <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" />
-          <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status" />
-          <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
-          <img src="https://img.shields.io/badge/TypeScript-5.3-blue" alt="TypeScript" />
+          <a href="https://github.com/docsynth/docsynth/actions/workflows/ci.yml">
+            <img
+              src="https://github.com/docsynth/docsynth/actions/workflows/ci.yml/badge.svg"
+              alt="CI"
+            />
+          </a>
+          <a href="https://github.com/docsynth/docsynth">
+            <img
+              src="https://img.shields.io/github/stars/docsynth/docsynth?style=flat"
+              alt="GitHub Stars"
+            />
+          </a>
+          <a href="https://github.com/docsynth/docsynth/blob/main/LICENSE">
+            <img src="https://img.shields.io/github/license/docsynth/docsynth" alt="License" />
+          </a>
+          <img src="https://img.shields.io/badge/node-20%2B-brightgreen" alt="Node.js 20+" />
         </div>
         <Heading as="h1" className={styles.heroTitle}>
           {siteConfig.title}
@@ -89,29 +57,12 @@ function HomepageHeader() {
           >
             GitHub
           </Link>
-          <Link
-            className="button button--outline button--lg"
-            to="https://discord.gg/docsynth"
-          >
+          <Link className="button button--outline button--lg" to="https://discord.gg/docsynth">
             Discord
           </Link>
         </div>
       </div>
     </header>
-  );
-}
-
-function HomepageFeatures(): ReactNode {
-  return (
-    <section className={styles.features}>
-      <div className="container">
-        <div className="row">
-          {features.map((props, idx) => (
-            <Feature key={idx} {...props} />
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -158,14 +109,19 @@ function HowItWorks(): ReactNode {
   );
 }
 
-function UsedBy(): ReactNode {
+function CommunityStats(): ReactNode {
   return (
     <section className={styles.usedBy}>
       <div className="container">
-        <p className={styles.usedByTitle}>Trusted by engineering teams at</p>
+        <p className={styles.usedByTitle}>
+          Built in the open — community-driven documentation automation
+        </p>
         <div className={styles.usedByLogos}>
-          {usedByCompanies.map((company) => (
-            <span key={company}>{company}</span>
+          {communityStats.map((stat) => (
+            <div key={stat.label} className={styles.statItem}>
+              <span className={styles.statValue}>{stat.value}</span>
+              <span className={styles.statLabel}>{stat.label}</span>
+            </div>
           ))}
         </div>
       </div>
@@ -173,7 +129,7 @@ function UsedBy(): ReactNode {
   );
 }
 
-const demoConfigCode = `// .docsynth.json
+const demoConfigCode = `// .docsynth.json — drop this in your repo
 {
   "version": 1,
   "triggers": {
@@ -191,6 +147,18 @@ const demoConfigCode = `// .docsynth.json
   }
 }`;
 
+const demoOutputCode = `PR #42 merged → DocSynth processing...
+
+✔ Change Analysis — 12 files, 3 new exports
+✔ Intent Inference — Context from PR + JIRA-123
+✔ Doc Generation — 2 docs updated, 1 created
+✔ Quality Review — Score: 94/100
+
+→ PR #43 opened: "docs: Add authentication guide"
+  • docs/api/authentication.md (new)
+  • docs/api/users.md (updated)
+  • CHANGELOG.md (entry added)`;
+
 function DemoSection(): ReactNode {
   return (
     <section className={styles.demoSection}>
@@ -199,15 +167,26 @@ function DemoSection(): ReactNode {
           <div className={styles.demoText}>
             <Heading as="h2">Configure Once, Document Forever</Heading>
             <p>
-              Add a simple config file to your repository. DocSynth handles the rest—analyzing 
-              code changes, gathering context, and generating documentation automatically.
+              Add a simple config file to your repository. DocSynth handles the rest—analyzing code
+              changes, gathering context, and generating documentation automatically.
             </p>
-            <Link className="button button--primary" to="/docs/guides/configuring-docsynth">
-              View Configuration Guide →
-            </Link>
+            <div className={styles.demoCode}>
+              <CodeBlock language="json" title=".docsynth.json">
+                {demoConfigCode}
+              </CodeBlock>
+            </div>
           </div>
-          <div className={styles.demoCode}>
-            <CodeBlock language="json">{demoConfigCode}</CodeBlock>
+          <div className={styles.demoText}>
+            <Heading as="h2">See It in Action</Heading>
+            <p>
+              Merge a PR and DocSynth takes over. It analyzes changes, gathers context from your PR
+              and linked tickets, generates docs, and opens a review PR—all automatically.
+            </p>
+            <div className={styles.demoCode}>
+              <CodeBlock language="bash" title="Pipeline Output">
+                {demoOutputCode}
+              </CodeBlock>
+            </div>
           </div>
         </div>
       </div>
@@ -220,9 +199,7 @@ function CTASection(): ReactNode {
     <section className={styles.ctaSection}>
       <div className="container">
         <Heading as="h2">Ready to Automate Your Documentation?</Heading>
-        <p>
-          Join thousands of developers who never worry about outdated docs again.
-        </p>
+        <p>Join thousands of developers who never worry about outdated docs again.</p>
         <div className={styles.buttons}>
           <Link className="button button--primary button--lg" to="/docs/getting-started">
             Get Started Free →
@@ -244,7 +221,7 @@ export default function Home(): ReactNode {
     >
       <HomepageHeader />
       <main>
-        <UsedBy />
+        <CommunityStats />
         <HomepageFeatures />
         <HowItWorks />
         <DemoSection />

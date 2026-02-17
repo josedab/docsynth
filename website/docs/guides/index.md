@@ -10,19 +10,21 @@ Step-by-step guides for common DocSynth tasks.
 
 ## Getting Productive
 
-| Guide | Description |
-|-------|-------------|
+| Guide                                                     | Description                              |
+| --------------------------------------------------------- | ---------------------------------------- |
 | [Configuring DocSynth](/docs/guides/configuring-docsynth) | Customize behavior with `.docsynth.json` |
-| [Using the CLI](/docs/guides/using-the-cli) | Master the command-line interface |
-| [Dashboard Overview](/docs/guides/dashboard-overview) | Navigate the web dashboard |
-| [VS Code Extension](/docs/guides/vscode-extension) | IDE integration for real-time docs |
+| [Using the CLI](/docs/guides/using-the-cli)               | Master the command-line interface        |
+| [Dashboard Overview](/docs/guides/dashboard-overview)     | Navigate the web dashboard               |
+| [VS Code Extension](/docs/guides/vscode-extension)        | IDE integration for real-time docs       |
 
 ## Integrations
 
-| Guide | Description |
-|-------|-------------|
-| [Integrations](/docs/guides/integrations) | Connect Jira, Slack, Confluence, Linear |
-| [Self-Hosting](/docs/guides/self-hosting) | Deploy DocSynth on your infrastructure |
+| Guide                                       | Description                                           |
+| ------------------------------------------- | ----------------------------------------------------- |
+| [Integrations](/docs/guides/integrations)   | Connect Jira, Slack, Confluence, Linear               |
+| [MCP Server](/docs/guides/mcp-server)       | Integrate with AI coding agents (Claude Code, Cursor) |
+| [GitHub Action](/docs/guides/github-action) | Run DocSynth in CI/CD — no server required            |
+| [Self-Hosting](/docs/guides/self-hosting)   | Deploy DocSynth on your infrastructure                |
 
 ## Quick Links
 

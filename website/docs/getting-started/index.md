@@ -62,6 +62,7 @@ Now merge any PR to your repository. DocSynth will:
 - [Installation Options](/docs/getting-started/installation) — Self-hosting, Docker, cloud
 - [Quick Start](/docs/getting-started/quick-start) — Detailed walkthrough with examples
 - [GitHub App Setup](/docs/getting-started/github-app-setup) — Permissions and configuration
+- [Demo Mode](/docs/getting-started/demo-mode) — Explore without a GitHub App
 - [Configuration](/docs/guides/configuring-docsynth) — Customize behavior with `.docsynth.json`
 
 ## Need Help?

@@ -18,7 +18,12 @@ const config: Config = {
   projectName: 'docsynth',
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
 
   i18n: {
     defaultLocale: 'en',
@@ -68,7 +73,8 @@ const config: Config = {
     },
     announcementBar: {
       id: 'beta',
-      content: '🚀 DocSynth is in beta! <a href="/docs/getting-started">Get started</a> or <a href="https://github.com/docsynth/docsynth">star us on GitHub</a>',
+      content:
+        '🚀 DocSynth is in beta! <a href="/docs/getting-started">Get started</a> or <a href="https://github.com/docsynth/docsynth">star us on GitHub</a>',
       backgroundColor: '#5865F2',
       textColor: '#fff',
       isCloseable: true,
@@ -115,16 +121,17 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'GitHub Discussions', href: 'https://github.com/docsynth/docsynth/discussions' },
+            {
+              label: 'GitHub Discussions',
+              href: 'https://github.com/docsynth/docsynth/discussions',
+            },
             { label: 'Discord', href: 'https://discord.gg/docsynth' },
             { label: 'X / Twitter', href: 'https://x.com/docsynthdev' },
           ],
         },
         {
           title: 'More',
-          items: [
-            { label: 'GitHub', href: 'https://github.com/docsynth/docsynth' },
-          ],
+          items: [{ label: 'GitHub', href: 'https://github.com/docsynth/docsynth' }],
         },
       ],
       copyright: `Copyright © ${new Date().getFullYear()} DocSynth. Built with Docusaurus.`,

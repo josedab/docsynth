@@ -12,6 +12,7 @@ const sidebars: SidebarsConfig = {
         'getting-started/installation',
         'getting-started/quick-start',
         'getting-started/github-app-setup',
+        'getting-started/demo-mode',
       ],
     },
     {
@@ -35,6 +36,8 @@ const sidebars: SidebarsConfig = {
         'guides/dashboard-overview',
         'guides/vscode-extension',
         'guides/integrations',
+        'guides/mcp-server',
+        'guides/github-action',
         'guides/self-hosting',
         'guides/examples',
       ],

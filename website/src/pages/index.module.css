@@ -66,40 +66,7 @@
   }
 }
 
-.features {
-  padding: 4rem 0;
-}
-
-.featureCard {
-  background: var(--ifm-background-surface-color);
-  border-radius: 12px;
-  padding: 1.5rem;
-  height: 100%;
-  margin-bottom: 1.5rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid var(--ifm-color-emphasis-200);
-}
-
-.featureCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-}
-
-.featureEmoji {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.featureCard h3 {
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.featureCard p {
-  margin: 0;
-  opacity: 0.85;
-}
-
+/* How it works section */
 .howItWorks {
   padding: 4rem 0;
   background: var(--ifm-background-surface-color);
@@ -182,13 +149,26 @@
   justify-content: center;
   gap: 3rem;
   flex-wrap: wrap;
-  opacity: 0.6;
 }
 
-.usedByLogos span {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--ifm-font-color-base);
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
 }
 
 /* Demo code section */
