@@ -87,6 +87,50 @@ export const QUEUE_NAMES = {
   REALTIME_EDITOR: 'realtime-editor',
   // Feature #8: Embeddable Documentation Widget
   WIDGET_ANALYTICS: 'widget-analytics',
+  // Next-gen v4 features
+  DOC_AUTOPILOT: 'doc-autopilot',
+  PR_REVIEW_BOT: 'pr-review-bot',
+  COVERAGE_CI_GATE: 'coverage-ci-gate',
+  ONBOARDING_GENERATOR: 'onboarding-generator',
+  TRANSLATION_SYNC: 'translation-sync',
+  DOC_TESTS_RUNTIME: 'doc-tests-runtime',
+  SELF_HEALING_AUTO: 'self-healing-auto',
+  WIDGET_CONTEXTUAL: 'widget-contextual',
+  ROI_EXECUTIVE: 'roi-executive',
+  FEDERATED_SEARCH: 'federated-search',
+  // Next-gen v5 features
+  DOC_AGENT: 'doc-agent',
+  COPILOT_EXTENSION: 'copilot-extension',
+  DOC_DIFF_STAGING: 'doc-diff-staging',
+  KNOWLEDGE_BASE_RAG: 'knowledge-base-rag',
+  TEAM_COLLABORATION: 'team-collaboration',
+  DOC_ANALYTICS_INSIGHTS: 'doc-analytics-insights',
+  FRAMEWORK_TEMPLATES: 'framework-templates',
+  DOC_GOVERNANCE: 'doc-governance',
+  DOC_MIGRATION_ENGINE: 'doc-migration-engine',
+  ONBOARDING_INTELLIGENCE: 'onboarding-intelligence',
+  // Next-gen v6 features
+  DOCS_GITOPS: 'docs-gitops',
+  PAIR_WRITING: 'pair-writing',
+  DOC_SUPPLY_CHAIN: 'doc-supply-chain',
+  DOC_PORTAL: 'doc-portal',
+  IMPACT_ATTRIBUTION: 'impact-attribution',
+  DOC_QUALITY_BENCHMARK: 'doc-quality-benchmark',
+  DOC_WEBHOOKS: 'doc-webhooks',
+  DOC_AB_TESTING: 'doc-ab-testing',
+  OFFLINE_SYNC: 'offline-sync',
+  DOC_GAMIFICATION: 'doc-gamification',
+  // Next-gen v7 features
+  DOC_LSP: 'doc-lsp',
+  DOC_DEP_GRAPH: 'doc-dep-graph',
+  DOC_SEMVER: 'doc-semver',
+  DOC_QL: 'doc-ql',
+  DOC_FEDERATION: 'doc-federation',
+  DOC_REGRESSION: 'doc-regression',
+  DOC_CONTEXT_TRANSLATION: 'doc-context-translation',
+  DOC_HEALTH_BADGE: 'doc-health-badge',
+  DOC_PLAYGROUND: 'doc-playground',
+  DOC_FORECAST: 'doc-forecast',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -727,6 +771,495 @@ export interface RealtimeEditorJobData {
 }
 
 // ============================================================================
+// Next-Gen V4 Feature Job Data Types
+// ============================================================================
+
+// Documentation Autopilot Mode - Zero-config doc baseline generation
+export interface DocAutopilotJobData {
+  repositoryId: string;
+  action: 'analyze' | 'generate-baseline' | 'learn-style';
+  installationId?: number;
+  owner?: string;
+  repo?: string;
+  options?: {
+    depth: 'shallow' | 'deep';
+    includePatterns?: string[];
+    excludePatterns?: string[];
+    generateReadme?: boolean;
+    generateApiDocs?: boolean;
+    generateArchOverview?: boolean;
+    generateSetupGuide?: boolean;
+  };
+}
+
+// PR Review Bot - Inline doc suggestions on PRs
+export interface PRReviewBotJobData {
+  repositoryId: string;
+  prNumber: number;
+  installationId: number;
+  owner: string;
+  repo: string;
+  action: 'analyze-and-suggest' | 'apply-suggestion' | 'dismiss-suggestion';
+  suggestionId?: string;
+  confidenceThreshold?: number;
+}
+
+// Coverage CI Gate - AST-based coverage with CI blocking
+export interface CoverageCIGateJobData {
+  repositoryId: string;
+  prNumber?: number;
+  installationId?: number;
+  owner?: string;
+  repo?: string;
+  action: 'scan' | 'enforce' | 'report';
+  thresholds?: {
+    minPublicApiCoverage: number;
+    minOverallCoverage: number;
+    blockOnFailure: boolean;
+  };
+}
+
+// Onboarding Generator - Codebase topology and guided walkthroughs
+export interface OnboardingGeneratorJobData {
+  repositoryId: string;
+  userId?: string;
+  role: 'frontend' | 'backend' | 'fullstack' | 'devops' | 'general';
+  action: 'analyze-topology' | 'generate-path' | 'update-path';
+  pathId?: string;
+  options?: {
+    includeSetupSteps: boolean;
+    includeArchOverview: boolean;
+    includeFirstTasks: boolean;
+    maxSteps?: number;
+  };
+}
+
+// Translation Sync - Delta translation with glossary
+export interface TranslationSyncJobData {
+  repositoryId: string;
+  documentId?: string;
+  action: 'sync' | 'translate-delta' | 'update-glossary' | 'validate';
+  targetLanguages: string[];
+  sourceLanguage?: string;
+  glossaryId?: string;
+  options?: {
+    deltaOnly: boolean;
+    preserveFormatting: boolean;
+    technicalTermHandling: 'keep-original' | 'translate' | 'glossary-lookup';
+  };
+}
+
+// Doc Tests Runtime - Extract and execute code examples from docs
+export interface DocTestsRuntimeJobData {
+  repositoryId: string;
+  documentId?: string;
+  action: 'extract' | 'execute' | 'validate' | 'auto-fix';
+  options?: {
+    languages: string[];
+    timeout: number;
+    sandboxed: boolean;
+    autoFixOnFailure: boolean;
+    generateReport: boolean;
+  };
+}
+
+// Self-Healing Auto - Autonomous drift detection and regeneration
+export interface SelfHealingAutoJobData {
+  repositoryId: string;
+  action: 'assess-drift' | 'regenerate' | 'create-pr';
+  driftThreshold?: number;
+  confidenceMinimum?: number;
+  maxSectionsPerRun?: number;
+  driftSignals?: {
+    codeDocRatio: number;
+    linkValidity: number;
+    apiSignatureChanges: number;
+    timeSinceUpdate: number;
+  };
+}
+
+// Widget Contextual - Contextual doc lookup for embedded widgets
+export interface WidgetContextualJobData {
+  widgetId: string;
+  action: 'resolve-context' | 'index-content' | 'track-analytics';
+  context?: {
+    urlPath?: string;
+    apiEndpoint?: string;
+    userRole?: string;
+    searchQuery?: string;
+  };
+  repositoryId?: string;
+}
+
+// ROI Executive - Executive reports and PDF generation
+export interface ROIExecutiveJobData {
+  organizationId: string;
+  action: 'compute-metrics' | 'generate-report' | 'schedule-digest';
+  format?: 'json' | 'pdf' | 'csv' | 'slack-digest';
+  period: 'weekly' | 'monthly' | 'quarterly';
+  startDate?: string;
+  endDate?: string;
+  recipients?: string[];
+  metrics?: string[];
+}
+
+// Federated Search - Cross-repo unified documentation search
+export interface FederatedSearchJobData {
+  organizationId: string;
+  action: 'index-repo' | 'reindex-all' | 'search' | 'build-navigation';
+  repositoryIds?: string[];
+  searchQuery?: string;
+  options?: {
+    includeDepMaps: boolean;
+    buildCrossRefs: boolean;
+    enforceOrgStyle: boolean;
+  };
+}
+
+// ============================================================================
+// Next-Gen V5 Feature Job Data Types
+// ============================================================================
+
+// AI Documentation Agent - Agentic reasoning loop
+export interface DocAgentJobData {
+  repositoryId: string;
+  action: 'plan' | 'generate' | 'validate' | 'self-correct' | 'full-cycle';
+  prNumber?: number;
+  installationId?: number;
+  owner?: string;
+  repo?: string;
+  context?: {
+    changeAnalysisId?: string;
+    intentContextId?: string;
+    maxIterations?: number;
+    confidenceThreshold?: number;
+    budgetCents?: number;
+  };
+}
+
+// GitHub Copilot Extension - Native @docsynth commands
+export interface CopilotExtensionJobData {
+  command: 'update' | 'explain' | 'status' | 'coverage' | 'chat';
+  repositoryId: string;
+  userId: string;
+  conversationId: string;
+  message: string;
+  context?: {
+    filePath?: string;
+    selection?: string;
+    prNumber?: number;
+    branch?: string;
+  };
+}
+
+// Smart Doc Diff & Staging - Section-level diff with accept/reject
+export interface DocDiffStagingJobData {
+  repositoryId: string;
+  action: 'compute-diff' | 'apply-staged' | 'preview';
+  generationJobId?: string;
+  documentPath?: string;
+  stagedSections?: Array<{
+    sectionId: string;
+    action: 'accept' | 'reject' | 'edit';
+    editedContent?: string;
+  }>;
+}
+
+// Knowledge Base RAG 2.0 - Unified indexer with citations
+export interface KnowledgeBaseRAGJobData {
+  organizationId: string;
+  repositoryId?: string;
+  action: 'index-full' | 'index-incremental' | 'query' | 'surface-proactive';
+  sources?: Array<'code' | 'docs' | 'prs' | 'issues' | 'slack' | 'adr'>;
+  query?: string;
+  options?: {
+    requireCitations: boolean;
+    confidenceMinimum: number;
+    maxChunks: number;
+  };
+}
+
+// Team Collaboration Workflows - Multi-reviewer approval
+export interface TeamCollaborationJobData {
+  action: 'create-review' | 'assign-reviewer' | 'notify' | 'escalate' | 'resolve-thread';
+  documentId: string;
+  repositoryId: string;
+  reviewId?: string;
+  assignees?: string[];
+  threadId?: string;
+  comment?: string;
+  dueDate?: string;
+}
+
+// Documentation Analytics & Insights - Reader behavior tracking
+export interface DocAnalyticsInsightsJobData {
+  organizationId: string;
+  repositoryId?: string;
+  action: 'collect-events' | 'compute-insights' | 'generate-recommendations';
+  period?: 'daily' | 'weekly' | 'monthly';
+  eventBatch?: Array<{
+    eventType: 'view' | 'search' | 'feedback' | 'time-on-page';
+    documentPath: string;
+    metadata: Record<string, unknown>;
+  }>;
+}
+
+// Multi-Framework Doc Templates - Framework-specific generation
+export interface FrameworkTemplatesJobData {
+  repositoryId: string;
+  action: 'detect-framework' | 'apply-template' | 'generate-from-template';
+  framework?: string;
+  templateId?: string;
+  targetPath?: string;
+  variables?: Record<string, unknown>;
+}
+
+// Documentation Governance & Compliance - Policy enforcement
+export interface DocGovernanceJobData {
+  repositoryId: string;
+  action: 'evaluate-policies' | 'enforce-gate' | 'generate-report' | 'scan-compliance';
+  prNumber?: number;
+  installationId?: number;
+  owner?: string;
+  repo?: string;
+  policyOverrides?: Record<string, unknown>;
+}
+
+// Incremental Doc Migration Engine - Import from external sources
+export interface DocMigrationEngineJobData {
+  organizationId: string;
+  action: 'connect' | 'import' | 'convert' | 'sync-bidirectional' | 'validate';
+  source: 'confluence' | 'notion' | 'gitbook' | 'google-docs' | 'markdown';
+  connectionConfig: {
+    baseUrl?: string;
+    apiToken?: string;
+    spaceKey?: string;
+    databaseId?: string;
+  };
+  targetRepositoryId: string;
+  options?: {
+    preserveMetadata: boolean;
+    convertImages: boolean;
+    rewriteLinks: boolean;
+    dryRun: boolean;
+  };
+}
+
+// Developer Onboarding Intelligence - Journey tracking & optimization
+export interface OnboardingIntelligenceJobData {
+  repositoryId: string;
+  action: 'track-journey' | 'optimize-path' | 'compute-metrics' | 'generate-report';
+  userId?: string;
+  role?: string;
+  journeyEvent?: {
+    eventType: 'doc-read' | 'doc-search' | 'question-asked' | 'first-commit' | 'stuck';
+    documentPath?: string;
+    durationMs?: number;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+// ============================================================================
+// Next-Gen V6 Feature Job Data Types
+// ============================================================================
+
+// Docs-as-Infrastructure (GitOps) - Declarative doc config
+export interface DocsGitOpsJobData {
+  repositoryId: string;
+  action: 'plan' | 'apply' | 'drift-detect' | 'validate-config';
+  configPath?: string;
+  installationId?: number;
+  owner?: string;
+  repo?: string;
+  dryRun?: boolean;
+}
+
+// Real-Time Co-Pilot Pair Writing - Live AI co-writing
+export interface PairWritingJobData {
+  sessionId: string;
+  repositoryId: string;
+  action: 'suggest-completion' | 'validate-facts' | 'insert-example' | 'persist-session';
+  documentPath: string;
+  cursorPosition?: number;
+  currentContent?: string;
+  context?: { filePath?: string; selection?: string };
+}
+
+// Documentation Supply Chain Security - Attestation
+export interface DocSupplyChainJobData {
+  repositoryId: string;
+  action: 'sign' | 'verify' | 'audit' | 'generate-sbom';
+  documentId?: string;
+  generationJobId?: string;
+  commitSha?: string;
+}
+
+// Multi-Tenant Documentation Portal
+export interface DocPortalJobData {
+  portalId: string;
+  organizationId: string;
+  action: 'build' | 'deploy' | 'update-config' | 'invalidate-cache' | 'generate-sitemap';
+  repositoryIds?: string[];
+  customDomain?: string;
+  version?: string;
+}
+
+// Documentation Impact Attribution
+export interface ImpactAttributionJobData {
+  organizationId: string;
+  action: 'correlate' | 'compute-impact' | 'predict' | 'generate-report';
+  repositoryId?: string;
+  period?: 'weekly' | 'monthly' | 'quarterly';
+  integrations?: Array<'jira' | 'zendesk' | 'intercom'>;
+}
+
+// AI Doc Quality Benchmark
+export interface DocQualityBenchmarkJobData {
+  action: 'evaluate' | 'compare' | 'update-leaderboard' | 'generate-report';
+  repositoryId?: string;
+  documentId?: string;
+  benchmarkSuiteId?: string;
+  dimensions?: string[];
+}
+
+// Event-Driven Doc Webhooks
+export interface DocWebhooksJobData {
+  action: 'deliver' | 'retry' | 'test' | 'cleanup-dead-letters';
+  webhookId?: string;
+  eventType?: string;
+  payload?: Record<string, unknown>;
+  subscriptionId?: string;
+}
+
+// Documentation A/B Testing
+export interface DocABTestingJobData {
+  repositoryId: string;
+  action: 'create-experiment' | 'assign-variant' | 'record-outcome' | 'compute-results' | 'archive';
+  experimentId?: string;
+  variantId?: string;
+  userId?: string;
+  outcomeType?: string;
+}
+
+// Offline-First Documentation Sync
+export interface OfflineSyncJobData {
+  userId: string;
+  action: 'prepare-bundle' | 'resolve-conflicts' | 'sync-changes' | 'evict-stale';
+  repositoryIds?: string[];
+  deviceId?: string;
+  lastSyncTimestamp?: string;
+}
+
+// Documentation Skill Tree (Gamification)
+export interface DocGamificationJobData {
+  userId: string;
+  action: 'check-achievements' | 'update-leaderboard' | 'award-badge' | 'compute-streaks';
+  repositoryId?: string;
+  eventType?: string;
+  eventMetadata?: Record<string, unknown>;
+}
+
+// ============================================================================
+// Next-Gen V7 Feature Job Data Types
+// ============================================================================
+
+// Documentation Language Server Protocol
+export interface DocLSPJobData {
+  repositoryId: string;
+  action: 'diagnose' | 'complete' | 'resolve-reference' | 'index-workspace';
+  filePath?: string;
+  position?: { line: number; character: number };
+  content?: string;
+}
+
+// Documentation Dependency Graph
+export interface DocDepGraphJobData {
+  repositoryId: string;
+  action: 'build-graph' | 'compute-blast-radius' | 'detect-broken-refs' | 'export-graph';
+  prNumber?: number;
+  changedFiles?: string[];
+  format?: 'json' | 'dot' | 'cytoscape';
+}
+
+// Semantic Documentation Versioning
+export interface DocSemverJobData {
+  repositoryId: string;
+  action: 'classify-change' | 'bump-version' | 'tag-release' | 'query-version';
+  documentPath?: string;
+  codeVersion?: string;
+  diffContent?: string;
+}
+
+// DocQL Query Language
+export interface DocQLJobData {
+  organizationId: string;
+  action: 'execute-query' | 'validate-query' | 'schedule-alert';
+  query: string;
+  repositoryId?: string;
+  alertConfig?: { channel: 'slack' | 'email'; threshold?: string };
+}
+
+// Cross-Organization Documentation Federation
+export interface DocFederationJobData {
+  organizationId: string;
+  action: 'establish-trust' | 'resolve-reference' | 'sync-index' | 'revoke-trust';
+  targetOrgId?: string;
+  reference?: string;
+  accessLevel?: 'public' | 'federated' | 'private';
+}
+
+// Documentation Regression Testing
+export interface DocRegressionJobData {
+  repositoryId: string;
+  action: 'run-assertions' | 'validate-suite' | 'generate-report';
+  prNumber?: number;
+  installationId?: number;
+  owner?: string;
+  repo?: string;
+  suitePath?: string;
+}
+
+// AI Context-Aware Translation
+export interface DocContextTranslationJobData {
+  repositoryId: string;
+  action: 'translate' | 'sync-delta' | 'build-glossary' | 'validate-translation';
+  documentId?: string;
+  targetLanguage: string;
+  sourceLanguage?: string;
+  glossaryId?: string;
+}
+
+// Documentation Health Badge & Status Check
+export interface DocHealthBadgeJobData {
+  repositoryId: string;
+  action: 'compute-score' | 'render-badge' | 'post-status-check' | 'update-leaderboard';
+  prNumber?: number;
+  installationId?: number;
+  owner?: string;
+  repo?: string;
+  format?: 'svg' | 'json';
+}
+
+// Interactive Documentation Playground
+export interface DocPlaygroundJobData {
+  repositoryId: string;
+  action: 'extract-examples' | 'execute-snippet' | 'create-playground' | 'cleanup-containers';
+  documentPath?: string;
+  language?: string;
+  code?: string;
+  playgroundId?: string;
+  timeout?: number;
+}
+
+// Documentation Change Forecasting
+export interface DocForecastJobData {
+  repositoryId: string;
+  action: 'collect-signals' | 'train-model' | 'predict' | 'generate-digest';
+  period?: 'sprint' | 'week' | 'month';
+  topN?: number;
+}
+
+// ============================================================================
 // Job Data Map (maps queue names to their data types)
 // ============================================================================
 
@@ -810,4 +1343,48 @@ export type JobDataMap = {
   [QUEUE_NAMES.REALTIME_EDITOR]: RealtimeEditorJobData;
   // Feature #8: Embeddable Documentation Widget
   [QUEUE_NAMES.WIDGET_ANALYTICS]: WidgetAnalyticsJobData;
+  // Next-gen v4 feature job data mappings
+  [QUEUE_NAMES.DOC_AUTOPILOT]: DocAutopilotJobData;
+  [QUEUE_NAMES.PR_REVIEW_BOT]: PRReviewBotJobData;
+  [QUEUE_NAMES.COVERAGE_CI_GATE]: CoverageCIGateJobData;
+  [QUEUE_NAMES.ONBOARDING_GENERATOR]: OnboardingGeneratorJobData;
+  [QUEUE_NAMES.TRANSLATION_SYNC]: TranslationSyncJobData;
+  [QUEUE_NAMES.DOC_TESTS_RUNTIME]: DocTestsRuntimeJobData;
+  [QUEUE_NAMES.SELF_HEALING_AUTO]: SelfHealingAutoJobData;
+  [QUEUE_NAMES.WIDGET_CONTEXTUAL]: WidgetContextualJobData;
+  [QUEUE_NAMES.ROI_EXECUTIVE]: ROIExecutiveJobData;
+  [QUEUE_NAMES.FEDERATED_SEARCH]: FederatedSearchJobData;
+  // Next-gen v5 feature job data mappings
+  [QUEUE_NAMES.DOC_AGENT]: DocAgentJobData;
+  [QUEUE_NAMES.COPILOT_EXTENSION]: CopilotExtensionJobData;
+  [QUEUE_NAMES.DOC_DIFF_STAGING]: DocDiffStagingJobData;
+  [QUEUE_NAMES.KNOWLEDGE_BASE_RAG]: KnowledgeBaseRAGJobData;
+  [QUEUE_NAMES.TEAM_COLLABORATION]: TeamCollaborationJobData;
+  [QUEUE_NAMES.DOC_ANALYTICS_INSIGHTS]: DocAnalyticsInsightsJobData;
+  [QUEUE_NAMES.FRAMEWORK_TEMPLATES]: FrameworkTemplatesJobData;
+  [QUEUE_NAMES.DOC_GOVERNANCE]: DocGovernanceJobData;
+  [QUEUE_NAMES.DOC_MIGRATION_ENGINE]: DocMigrationEngineJobData;
+  [QUEUE_NAMES.ONBOARDING_INTELLIGENCE]: OnboardingIntelligenceJobData;
+  // Next-gen v6 feature job data mappings
+  [QUEUE_NAMES.DOCS_GITOPS]: DocsGitOpsJobData;
+  [QUEUE_NAMES.PAIR_WRITING]: PairWritingJobData;
+  [QUEUE_NAMES.DOC_SUPPLY_CHAIN]: DocSupplyChainJobData;
+  [QUEUE_NAMES.DOC_PORTAL]: DocPortalJobData;
+  [QUEUE_NAMES.IMPACT_ATTRIBUTION]: ImpactAttributionJobData;
+  [QUEUE_NAMES.DOC_QUALITY_BENCHMARK]: DocQualityBenchmarkJobData;
+  [QUEUE_NAMES.DOC_WEBHOOKS]: DocWebhooksJobData;
+  [QUEUE_NAMES.DOC_AB_TESTING]: DocABTestingJobData;
+  [QUEUE_NAMES.OFFLINE_SYNC]: OfflineSyncJobData;
+  [QUEUE_NAMES.DOC_GAMIFICATION]: DocGamificationJobData;
+  // Next-gen v7 feature job data mappings
+  [QUEUE_NAMES.DOC_LSP]: DocLSPJobData;
+  [QUEUE_NAMES.DOC_DEP_GRAPH]: DocDepGraphJobData;
+  [QUEUE_NAMES.DOC_SEMVER]: DocSemverJobData;
+  [QUEUE_NAMES.DOC_QL]: DocQLJobData;
+  [QUEUE_NAMES.DOC_FEDERATION]: DocFederationJobData;
+  [QUEUE_NAMES.DOC_REGRESSION]: DocRegressionJobData;
+  [QUEUE_NAMES.DOC_CONTEXT_TRANSLATION]: DocContextTranslationJobData;
+  [QUEUE_NAMES.DOC_HEALTH_BADGE]: DocHealthBadgeJobData;
+  [QUEUE_NAMES.DOC_PLAYGROUND]: DocPlaygroundJobData;
+  [QUEUE_NAMES.DOC_FORECAST]: DocForecastJobData;
 };
