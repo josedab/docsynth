@@ -24,9 +24,9 @@ describe('Queue Package', () => {
       expect(QUEUE_NAMES.BOT_MESSAGE).toBe('bot-message');
     });
 
-    it('should have 69 queue names', () => {
+    it('should have 109 queue names', () => {
       const queueNames = Object.values(QUEUE_NAMES);
-      expect(queueNames).toHaveLength(69);
+      expect(queueNames).toHaveLength(109);
     });
 
     it('should have unique queue names', () => {
