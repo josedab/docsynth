@@ -137,6 +137,54 @@ import { realtimeEditorRoutes } from './realtime-editor.js';
 // Feature #8: Embeddable Documentation Widget
 import { widgetRoutes } from './widget.js';
 
+// Next-gen v4 features
+import { autopilotRoutes } from './autopilot.js';
+import { prReviewBotRoutes } from './pr-review-bot.js';
+import { coverageCIGateRoutes } from './coverage-ci-gate.js';
+import { onboardingGeneratorRoutes } from './onboarding-generator.js';
+import { translationSyncRoutes } from './translation-sync.js';
+import { docTestsRuntimeRoutes } from './doc-tests-runtime.js';
+import { selfHealingAutoRoutes } from './self-healing-auto.js';
+import { widgetContextualRoutes } from './widget-contextual.js';
+import { roiExecutiveRoutes } from './roi-executive.js';
+import { federatedSearchRoutes } from './federated-search.js';
+
+// Next-gen v5 features
+import { docAgentRoutes } from './doc-agent.js';
+import { copilotExtensionRoutes } from './copilot-extension.js';
+import { docDiffStagingRoutes } from './doc-diff-staging.js';
+import { knowledgeBaseRAGRoutes } from './knowledge-base-rag.js';
+import { teamCollaborationRoutes } from './team-collaboration.js';
+import { docAnalyticsInsightsRoutes } from './doc-analytics-insights.js';
+import { frameworkTemplatesRoutes } from './framework-templates.js';
+import { docGovernanceRoutes } from './doc-governance.js';
+import { docMigrationEngineRoutes } from './doc-migration-engine.js';
+import { onboardingIntelligenceRoutes } from './onboarding-intelligence.js';
+
+// Next-gen v6 features
+import { docsGitOpsRoutes } from './docs-gitops.js';
+import { pairWritingRoutes } from './pair-writing.js';
+import { docSupplyChainRoutes } from './doc-supply-chain.js';
+import { docPortalRoutes } from './doc-portal.js';
+import { impactAttributionRoutes } from './impact-attribution.js';
+import { docQualityBenchmarkRoutes } from './doc-quality-benchmark.js';
+import { docWebhooksRoutes } from './doc-webhooks.js';
+import { docABTestingRoutes } from './doc-ab-testing.js';
+import { offlineSyncRoutes } from './offline-sync.js';
+import { docGamificationRoutes } from './doc-gamification.js';
+
+// Next-gen v7 features
+import { docLSPRoutes } from './doc-lsp.js';
+import { docDepGraphRoutes } from './doc-dep-graph.js';
+import { docSemverRoutes } from './doc-semver.js';
+import { docQLRoutes } from './doc-ql.js';
+import { docFederationRoutes } from './doc-federation.js';
+import { docRegressionRoutes } from './doc-regression.js';
+import { docContextTranslationRoutes } from './doc-context-translation.js';
+import { docHealthBadgeRoutes } from './doc-health-badge.js';
+import { docPlaygroundRoutes } from './doc-playground.js';
+import { docForecastRoutes } from './doc-forecast.js';
+
 // ============================================================================
 // Route Configuration
 // ============================================================================
@@ -458,6 +506,210 @@ const nextGenRoutes: RouteConfig[] = [
     path: '/api/realtime-editor',
     router: realtimeEditorRoutes,
     description: 'Real-time collaborative documentation editor',
+  },
+  // Next-gen v4 features
+  {
+    path: '/api/autopilot',
+    router: autopilotRoutes,
+    description: 'Zero-config documentation autopilot mode',
+  },
+  {
+    path: '/api/pr-review-bot',
+    router: prReviewBotRoutes,
+    description: 'PR review bot with inline doc suggestions',
+  },
+  {
+    path: '/api/coverage-ci-gate',
+    router: coverageCIGateRoutes,
+    description: 'AST-based documentation coverage CI gate',
+  },
+  {
+    path: '/api/onboarding-generator',
+    router: onboardingGeneratorRoutes,
+    description: 'Interactive onboarding path generator',
+  },
+  {
+    path: '/api/translation-sync',
+    router: translationSyncRoutes,
+    description: 'Multi-language documentation sync with glossaries',
+  },
+  {
+    path: '/api/doc-tests-runtime',
+    router: docTestsRuntimeRoutes,
+    description: 'Doc-as-tests runtime: extract and execute code examples',
+  },
+  {
+    path: '/api/self-healing-auto',
+    router: selfHealingAutoRoutes,
+    description: 'Autonomous self-healing documentation',
+  },
+  {
+    path: '/api/widget-contextual',
+    router: widgetContextualRoutes,
+    description: 'Contextual documentation widget with URL matching',
+  },
+  {
+    path: '/api/roi-executive',
+    router: roiExecutiveRoutes,
+    description: 'Executive ROI dashboard and reports',
+  },
+  {
+    path: '/api/federated-search',
+    router: federatedSearchRoutes,
+    description: 'Federated cross-repo documentation search',
+  },
+  // Next-gen v5 features
+  {
+    path: '/api/doc-agent',
+    router: docAgentRoutes,
+    description: 'AI documentation agent with agentic reasoning loop',
+  },
+  {
+    path: '/api/copilot-extension',
+    router: copilotExtensionRoutes,
+    description: 'GitHub Copilot extension @docsynth commands',
+  },
+  {
+    path: '/api/doc-diff-staging',
+    router: docDiffStagingRoutes,
+    description: 'Smart documentation diff and staging workflow',
+  },
+  {
+    path: '/api/knowledge-base',
+    router: knowledgeBaseRAGRoutes,
+    description: 'RAG 2.0 knowledge base with citations',
+  },
+  {
+    path: '/api/team-collaboration',
+    router: teamCollaborationRoutes,
+    description: 'Multi-reviewer doc approval workflows',
+  },
+  {
+    path: '/api/doc-analytics-insights',
+    router: docAnalyticsInsightsRoutes,
+    description: 'Documentation analytics and reader behavior insights',
+  },
+  {
+    path: '/api/framework-templates',
+    router: frameworkTemplatesRoutes,
+    description: 'Multi-framework documentation templates',
+  },
+  {
+    path: '/api/doc-governance',
+    router: docGovernanceRoutes,
+    description: 'Documentation governance and compliance enforcement',
+  },
+  {
+    path: '/api/doc-migration',
+    router: docMigrationEngineRoutes,
+    description: 'Incremental documentation migration engine',
+  },
+  {
+    path: '/api/onboarding-intelligence',
+    router: onboardingIntelligenceRoutes,
+    description: 'Developer onboarding intelligence and journey tracking',
+  },
+  // Next-gen v6 features
+  {
+    path: '/api/docs-gitops',
+    router: docsGitOpsRoutes,
+    description: 'Docs-as-Infrastructure with plan/apply GitOps semantics',
+  },
+  {
+    path: '/api/pair-writing',
+    router: pairWritingRoutes,
+    description: 'Real-time AI co-pilot pair writing sessions',
+  },
+  {
+    path: '/api/doc-supply-chain',
+    router: docSupplyChainRoutes,
+    description: 'Documentation supply chain security and attestation',
+  },
+  {
+    path: '/api/doc-portal',
+    router: docPortalRoutes,
+    description: 'Multi-tenant white-labeled documentation portals',
+  },
+  {
+    path: '/api/impact-attribution',
+    router: impactAttributionRoutes,
+    description: 'Documentation impact attribution and ROI correlation',
+  },
+  {
+    path: '/api/doc-quality-benchmark',
+    router: docQualityBenchmarkRoutes,
+    description: 'AI documentation quality benchmark and leaderboard',
+  },
+  {
+    path: '/api/doc-webhooks',
+    router: docWebhooksRoutes,
+    description: 'Event-driven documentation webhooks',
+  },
+  {
+    path: '/api/doc-ab-testing',
+    router: docABTestingRoutes,
+    description: 'Documentation A/B testing experiments',
+  },
+  {
+    path: '/api/offline-sync',
+    router: offlineSyncRoutes,
+    description: 'Offline-first documentation sync',
+  },
+  {
+    path: '/api/doc-gamification',
+    router: docGamificationRoutes,
+    description: 'Documentation skill tree and gamification',
+  },
+  // Next-gen v7 features
+  {
+    path: '/api/doc-lsp',
+    router: docLSPRoutes,
+    description: 'Documentation Language Server Protocol',
+  },
+  {
+    path: '/api/doc-dep-graph',
+    router: docDepGraphRoutes,
+    description: 'Documentation dependency graph and blast radius',
+  },
+  {
+    path: '/api/doc-semver',
+    router: docSemverRoutes,
+    description: 'Semantic documentation versioning',
+  },
+  {
+    path: '/api/doc-ql',
+    router: docQLRoutes,
+    description: 'DocQL query language for documentation metadata',
+  },
+  {
+    path: '/api/doc-federation',
+    router: docFederationRoutes,
+    description: 'Cross-organization documentation federation',
+  },
+  {
+    path: '/api/doc-regression',
+    router: docRegressionRoutes,
+    description: 'Documentation regression testing in CI',
+  },
+  {
+    path: '/api/doc-context-translation',
+    router: docContextTranslationRoutes,
+    description: 'AI context-aware technical translation',
+  },
+  {
+    path: '/api/doc-health-badge',
+    router: docHealthBadgeRoutes,
+    description: 'Documentation health badges and status checks',
+  },
+  {
+    path: '/api/doc-playground',
+    router: docPlaygroundRoutes,
+    description: 'Interactive documentation code playgrounds',
+  },
+  {
+    path: '/api/doc-forecast',
+    router: docForecastRoutes,
+    description: 'Documentation change forecasting',
   },
 ];
 
