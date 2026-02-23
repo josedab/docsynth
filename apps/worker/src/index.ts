@@ -86,6 +86,50 @@ import { startMonorepoHubWorker } from './workers/monorepo-hub.worker.js';
 import { startRealtimeEditorWorker } from './workers/realtime-editor.worker.js';
 // Feature #8: Embeddable Documentation Widget
 import { startWidgetAnalyticsWorker } from './workers/widget-analytics.worker.js';
+// Next-gen v4 feature workers
+import { startAutopilotWorker } from './workers/autopilot.worker.js';
+import { startPRReviewBotWorker } from './workers/pr-review-bot.worker.js';
+import { startCoverageCIGateWorker } from './workers/coverage-ci-gate.worker.js';
+import { startOnboardingGeneratorWorker } from './workers/onboarding-generator.worker.js';
+import { startTranslationSyncWorker } from './workers/translation-sync.worker.js';
+import { startDocTestsRuntimeWorker } from './workers/doc-tests-runtime.worker.js';
+import { startSelfHealingAutoWorker } from './workers/self-healing-auto.worker.js';
+import { startWidgetContextualWorker } from './workers/widget-contextual.worker.js';
+import { startROIExecutiveWorker } from './workers/roi-executive.worker.js';
+import { startFederatedSearchWorker } from './workers/federated-search.worker.js';
+// Next-gen v5 feature workers
+import { startDocAgentWorker } from './workers/doc-agent.worker.js';
+import { startCopilotExtensionWorker } from './workers/copilot-extension.worker.js';
+import { startDocDiffStagingWorker } from './workers/doc-diff-staging.worker.js';
+import { startKnowledgeBaseRAGWorker } from './workers/knowledge-base-rag.worker.js';
+import { startTeamCollaborationWorker } from './workers/team-collaboration.worker.js';
+import { startDocAnalyticsInsightsWorker } from './workers/doc-analytics-insights.worker.js';
+import { startFrameworkTemplatesWorker } from './workers/framework-templates.worker.js';
+import { startDocGovernanceWorker } from './workers/doc-governance.worker.js';
+import { startDocMigrationEngineWorker } from './workers/doc-migration-engine.worker.js';
+import { startOnboardingIntelligenceWorker } from './workers/onboarding-intelligence.worker.js';
+// Next-gen v6 feature workers
+import { startDocsGitOpsWorker } from './workers/docs-gitops.worker.js';
+import { startPairWritingWorker } from './workers/pair-writing.worker.js';
+import { startDocSupplyChainWorker } from './workers/doc-supply-chain.worker.js';
+import { startDocPortalWorker } from './workers/doc-portal.worker.js';
+import { startImpactAttributionWorker } from './workers/impact-attribution.worker.js';
+import { startDocQualityBenchmarkWorker } from './workers/doc-quality-benchmark.worker.js';
+import { startDocWebhooksWorker } from './workers/doc-webhooks.worker.js';
+import { startDocABTestingWorker } from './workers/doc-ab-testing.worker.js';
+import { startOfflineSyncWorker } from './workers/offline-sync.worker.js';
+import { startDocGamificationWorker } from './workers/doc-gamification.worker.js';
+// Next-gen v7 feature workers
+import { startDocLSPWorker } from './workers/doc-lsp.worker.js';
+import { startDocDepGraphWorker } from './workers/doc-dep-graph.worker.js';
+import { startDocSemverWorker } from './workers/doc-semver.worker.js';
+import { startDocQLWorker } from './workers/doc-ql.worker.js';
+import { startDocFederationWorker } from './workers/doc-federation.worker.js';
+import { startDocRegressionWorker } from './workers/doc-regression.worker.js';
+import { startDocContextTranslationWorker } from './workers/doc-context-translation.worker.js';
+import { startDocHealthBadgeWorker } from './workers/doc-health-badge.worker.js';
+import { startDocPlaygroundWorker } from './workers/doc-playground.worker.js';
+import { startDocForecastWorker } from './workers/doc-forecast.worker.js';
 
 const log = createLogger('worker');
 
@@ -200,6 +244,50 @@ async function start() {
     workers.push(startRealtimeEditorWorker());
     // Feature #8: Embeddable Documentation Widget
     workers.push(startWidgetAnalyticsWorker());
+    // Next-gen v4 feature workers
+    workers.push(startAutopilotWorker());
+    workers.push(startPRReviewBotWorker());
+    workers.push(startCoverageCIGateWorker());
+    workers.push(startOnboardingGeneratorWorker());
+    workers.push(startTranslationSyncWorker());
+    workers.push(startDocTestsRuntimeWorker());
+    workers.push(startSelfHealingAutoWorker());
+    workers.push(startWidgetContextualWorker());
+    workers.push(startROIExecutiveWorker());
+    workers.push(startFederatedSearchWorker());
+    // Next-gen v5 feature workers
+    workers.push(startDocAgentWorker());
+    workers.push(startCopilotExtensionWorker());
+    workers.push(startDocDiffStagingWorker());
+    workers.push(startKnowledgeBaseRAGWorker());
+    workers.push(startTeamCollaborationWorker());
+    workers.push(startDocAnalyticsInsightsWorker());
+    workers.push(startFrameworkTemplatesWorker());
+    workers.push(startDocGovernanceWorker());
+    workers.push(startDocMigrationEngineWorker());
+    workers.push(startOnboardingIntelligenceWorker());
+    // Next-gen v6 feature workers
+    workers.push(startDocsGitOpsWorker());
+    workers.push(startPairWritingWorker());
+    workers.push(startDocSupplyChainWorker());
+    workers.push(startDocPortalWorker());
+    workers.push(startImpactAttributionWorker());
+    workers.push(startDocQualityBenchmarkWorker());
+    workers.push(startDocWebhooksWorker());
+    workers.push(startDocABTestingWorker());
+    workers.push(startOfflineSyncWorker());
+    workers.push(startDocGamificationWorker());
+    // Next-gen v7 feature workers
+    workers.push(startDocLSPWorker());
+    workers.push(startDocDepGraphWorker());
+    workers.push(startDocSemverWorker());
+    workers.push(startDocQLWorker());
+    workers.push(startDocFederationWorker());
+    workers.push(startDocRegressionWorker());
+    workers.push(startDocContextTranslationWorker());
+    workers.push(startDocHealthBadgeWorker());
+    workers.push(startDocPlaygroundWorker());
+    workers.push(startDocForecastWorker());
 
     // Schedule periodic drift scans (runs daily)
     await schedulePeriodicDriftScans();
